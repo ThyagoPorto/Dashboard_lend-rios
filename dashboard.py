@@ -1,15 +1,28 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, redirect, url_for
 import pandas as pd
 import os
 
+# 1. Crie o Blueprint (isto você já tinha)
 dashboard_bp = Blueprint("dashboard", __name__)
+
+# 2. CRIE ESTA NOVA ROTA PRINCIPAL!
+#    Ela vai redirecionar o utilizador da página inicial ('/') 
+#    para a página de métricas ('/metrics').
+@dashboard_bp.route("/", methods=["GET"])
+def index():
+    # 'dashboard.get_metrics' refere-se à função get_metrics() deste blueprint.
+    return redirect(url_for('dashboard.get_metrics'))
+
+# --- O RESTO DO SEU CÓDIGO COM O CAMINHO DO EXCEL CORRIGIDO ---
 
 @dashboard_bp.route("/metrics", methods=["GET"])
 def get_metrics():
     """Retorna os dados das métricas da equipe Lendários com dados semanais completos"""
     try:
-        # Caminho para o arquivo Excel
-        excel_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "upload", "DashboardLéndários.xlsx")
+        # --- CORREÇÃO CRÍTICA AQUI ---
+        # O caminho agora aponta para um ficheiro na mesma pasta do projeto.
+        # Certifique-se de que o nome do ficheiro Excel está exatamente igual.
+        excel_path = os.path.join(os.path.dirname(__file__), "DashboardLéndários.xlsx")
         
         # Ler os dados do Excel
         df = pd.read_excel(excel_path, header=None)
@@ -142,7 +155,8 @@ def get_metrics():
 def get_summary():
     """Retorna um resumo geral das métricas"""
     try:
-        excel_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "upload", "DashboardLéndários.xlsx")
+        # --- CORREÇÃO CRÍTICA AQUI ---
+        excel_path = os.path.join(os.path.dirname(__file__), "DashboardLéndários.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         # Extrair dados de CSAT
@@ -209,7 +223,8 @@ def get_summary():
 def get_weekly_data():
     """Retorna dados semanais para gráficos de tendência"""
     try:
-        excel_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "upload", "DashboardLéndários.xlsx")
+        # --- CORREÇÃO CRÍTICA AQUI ---
+        excel_path = os.path.join(os.path.dirname(__file__), "DashboardLéndários.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         # Extrair dados de CSAT
