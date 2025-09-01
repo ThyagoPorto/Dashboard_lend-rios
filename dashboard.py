@@ -22,7 +22,7 @@ def get_metrics():
         # --- CORREÇÃO CRÍTICA AQUI ---
         # O caminho agora aponta para um ficheiro na mesma pasta do projeto.
         # Certifique-se de que o nome do ficheiro Excel está exatamente igual.
-        excel_path = os.path.join(os.path.dirname(__file__), "dados.xlsx")
+       excel_path = os.path.join(os.getcwd(), "dados.xlsx")
         
         # Ler os dados do Excel
         df = pd.read_excel(excel_path, header=None)
@@ -156,7 +156,7 @@ def get_summary():
     """Retorna um resumo geral das métricas"""
     try:
         # --- CORREÇÃO CRÍTICA AQUI ---
-        excel_path = os.path.join(os.path.dirname(__file__), "dados.xlsx")
+        excel_path = os.path.join(os.getcwd(), "dados.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         # Extrair dados de CSAT
@@ -224,7 +224,7 @@ def get_weekly_data():
     """Retorna dados semanais para gráficos de tendência"""
     try:
         # --- CORREÇÃO CRÍTICA AQUI ---
-        excel_path = os.path.join(os.path.dirname(__file__), "dados.xlsx")
+        excel_path = os.path.join(os.getcwd(), "dados.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         # Extrair dados de CSAT
