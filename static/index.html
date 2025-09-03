@@ -1,17 +1,107 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Dashboard</title>
-    <style>
-        body { font-family: sans-serif; text-align: center; padding: 40px; }
-        h1 { color: #333; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Métricas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 10px; text-align: center; }
+    th { background: #eee; }
+    .chart-container { width: 100%; max-width: 800px; margin: 40px auto; }
+  </style>
 </head>
 <body>
-    <h1>Bem-vindo ao meu Dashboard!</h1>
-    <p>A aplicação está a funcionar.</p>
-    <p>Acesse o endpoint do seu dashboard em <a href="/api/dashboard">/api/dashboard</a>.</p>
+  <h1>Dashboard - Métricas</h1>
+
+  <h2>Tabela de Métricas</h2>
+  <table id="metrics-table">
+    <thead>
+      <tr>
+        <th>Métrica</th>
+        <th>Meta</th>
+        <th>Status</th>
+        <th>Total do Mês</th>
+        <th>% do Mês</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="chart-container">
+    <canvas id="metricsChart"></canvas>
+  </div>
+
+  <script>
+    async function loadMetrics() {
+      try {
+        const res = await fetch("/api/dashboard/metrics");
+        const data = await res.json();
+
+        if (!data.success) {
+          document.body.innerHTML += "<p>Erro ao carregar métricas</p>";
+          return;
+        }
+
+        const metrics = data.data;
+        const tbody = document.querySelector("#metrics-table tbody");
+        const labels = [];
+        const values = [];
+
+        metrics.forEach(m => {
+          // preencher tabela
+          const row = `
+            <tr>
+              <td>${m.metrica}</td>
+              <td>${m.meta_objetivo}</td>
+              <td style="color:${m.cor}; font-weight:bold;">${m.status}</td>
+              <td>${m.total_mes.total}</td>
+              <td>${(m.total_mes.percentual * 100).toFixed(2)}%</td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
+
+          // dados para gráfico
+          labels.push(m.metrica);
+          values.push((m.total_mes.percentual * 100).toFixed(2));
+        });
+
+        // criar gráfico
+        const ctx = document.getElementById("metricsChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "% Cumprimento (Total Mês)",
+              data: values,
+              backgroundColor: ["#00D9FF", "#57A9FB", "#37D4CF", "#FF6B35", "#8B5CF6"]
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 120,
+                ticks: {
+                  callback: value => value + "%"
+                }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML += "<p>Erro ao buscar dados da API.</p>";
+      }
+    }
+
+    loadMetrics();
+  </script>
 </body>
 </html>
