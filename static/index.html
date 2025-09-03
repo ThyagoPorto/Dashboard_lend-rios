@@ -12,7 +12,7 @@
     table, th, td { border: 1px solid #ddd; }
     th, td { padding: 10px; text-align: center; }
     th { background: #eee; }
-    .chart-container { width: 100%; max-width: 800px; margin: 40px auto; }
+    .chart-container { width: 100%; max-width: 900px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
@@ -33,7 +33,13 @@
   </table>
 
   <div class="chart-container">
+    <h2>% Cumprimento por Métrica</h2>
     <canvas id="metricsChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <h2>Tendência Semanal</h2>
+    <canvas id="weeklyChart"></canvas>
   </div>
 
   <script>
@@ -65,12 +71,12 @@
           `;
           tbody.innerHTML += row;
 
-          // dados para gráfico
+          // dados para gráfico de barras
           labels.push(m.metrica);
           values.push((m.total_mes.percentual * 100).toFixed(2));
         });
 
-        // criar gráfico
+        // gráfico de barras
         const ctx = document.getElementById("metricsChart").getContext("2d");
         new Chart(ctx, {
           type: "bar",
@@ -88,9 +94,7 @@
               y: {
                 beginAtZero: true,
                 max: 120,
-                ticks: {
-                  callback: value => value + "%"
-                }
+                ticks: { callback: value => value + "%" }
               }
             }
           }
@@ -101,7 +105,55 @@
       }
     }
 
+    async function loadWeeklyData() {
+      try {
+        const res = await fetch("/api/dashboard/weekly-data");
+        const data = await res.json();
+
+        if (!data.success) {
+          document.body.innerHTML += "<p>Erro ao carregar dados semanais</p>";
+          return;
+        }
+
+        const weekly = data.data;
+
+        const ctx = document.getElementById("weeklyChart").getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: weekly.semanas,
+            datasets: [
+              { label: "CSAT", data: weekly.csat, borderColor: "#00D9FF", fill: false },
+              { label: "SLA", data: weekly.sla, borderColor: "#57A9FB", fill: false },
+              { label: "Cobertura", data: weekly.cobertura, borderColor: "#37D4CF", fill: false },
+              { label: "Churn", data: weekly.churn, borderColor: "#FF6B35", fill: false },
+              { label: "RNR", data: weekly.rnr, borderColor: "#8B5CF6", fill: false }
+            ]
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            stacked: false,
+            plugins: {
+              tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + "%" } }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 120,
+                ticks: { callback: value => value + "%" }
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML += "<p>Erro ao buscar dados semanais.</p>";
+      }
+    }
+
     loadMetrics();
+    loadWeeklyData();
   </script>
 </body>
 </html>
