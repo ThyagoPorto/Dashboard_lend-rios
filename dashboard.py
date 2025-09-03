@@ -12,7 +12,7 @@ def index():
 def get_metrics():
     """Retorna os dados das métricas da equipe Lendários com dados semanais completos"""
     try:
-        excel_path = os.path.join(os.getcwd(), "dados.xlsx")
+        excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
@@ -87,7 +87,7 @@ def get_metrics():
 def get_summary():
     """Retorna um resumo geral das métricas"""
     try:
-        excel_path = os.path.join(os.getcwd(), "dados.xlsx")
+        excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
@@ -131,7 +131,7 @@ def get_summary():
 def get_weekly_data():
     """Retorna dados semanais para gráficos de tendência"""
     try:
-        excel_path = os.path.join(os.getcwd(), "dados.xlsx")
+        excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
         df = pd.read_excel(excel_path, header=None)
 
         csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
