@@ -36,20 +36,26 @@ def get_metrics():
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
 
-            # Meta (%)
-            meta_val = str(df.iloc[row_index, 1]).replace("%", "").strip()
-            try:
-                meta_percentual = float(meta_val) / 100
-            except:
-                meta_percentual = 0
-            meta_objetivo = f"{meta_val}%"
+            # === META ===
+            raw_meta = str(df.iloc[row_index, 1]).replace("%", "").strip()
+            meta_val = _to_number(raw_meta)
+            if meta_val == 0:
+                # se não encontrou número válido na célula da meta,
+                # procura na linha inteira o primeiro valor numérico > 0
+                row_values = df.iloc[row_index].tolist()
+                for v in row_values:
+                    num = _to_number(v)
+                    if num > 0:
+                        meta_val = num
+                        break
+            meta_percentual = meta_val / 100 if meta_val else 0
+            meta_objetivo = f"{meta_val}%" if meta_val else "0%"
 
-            # Status
-            status = str(df.iloc[row_index, 2])
+            # === STATUS ===
+            status = str(df.iloc[row_index, 2]) if len(df.columns) > 2 else "-"
 
-            # Linha de dados logo abaixo
+            # === DADOS SEMANAIS ===
             data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
-
             semanas = []
             for i in range(0, len(data_row), 3):
                 try:
@@ -86,11 +92,11 @@ def get_metrics():
 
 
 def _to_number(val):
-    """Converte strings como '95%' ou '131' em float/int."""
+    """Converte qualquer valor em número (95% -> 95.0, '131' -> 131.0)."""
     if pd.isna(val):
         return 0
     if isinstance(val, (int, float)):
-        return val
+        return float(val)
     try:
         return float(str(val).replace("%", "").replace(",", ".").strip())
     except:
