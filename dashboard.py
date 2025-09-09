@@ -1,153 +1,164 @@
-import os
+from flask import Blueprint, jsonify, redirect, url_for
 import pandas as pd
-from flask import Blueprint, jsonify
+import os
 
-dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
+dashboard_bp = Blueprint("dashboard", __name__)
 
-# Caminho do Excel
-excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
-
-
-def load_excel():
-    try:
-        return pd.ExcelFile(excel_path)
-    except Exception:
-        return None
-
+@dashboard_bp.route("/", methods=["GET"])
+def index():
+    return redirect(url_for('dashboard.get_metrics'))
 
 @dashboard_bp.route("/metrics", methods=["GET"])
 def get_metrics():
+    """Retorna os dados das métricas da equipe Lendários com dados semanais completos"""
     try:
-        xls = load_excel()
-        if not xls:
-            return jsonify({"success": False, "error": "Erro ao carregar Excel"})
+        excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
+        df = pd.read_excel(excel_path, header=None)
 
-        df = pd.read_excel(xls, sheet_name="Métricas")
+        csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
+        csat_data = df.iloc[csat_row_index + 1, :].dropna().tolist()
 
-        metrics_data = []
-        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
-        cores = {
-            "CSAT": "#00D9FF",
-            "SLA dos DS": "#57A9FB",
-            "Cobertura de Carteira": "#8B5CF6",
-            "Cancelamento - Churn": "#FF6B35"
-        }
+        sla_row_index = df[df.iloc[:, 0] == "SLA dos DS"].index[0]
+        sla_data = df.iloc[sla_row_index + 1, :].dropna().tolist()
 
-        for metrica in metricas:
-            row_index = df[df.iloc[:, 0] == metrica].index[0]
+        cobertura_row_index = df[df.iloc[:, 0] == "Cobertura de Carteira"].index[0]
+        cobertura_data = df.iloc[cobertura_row_index + 1, :].dropna().tolist()
 
-            # === META ===
-            raw_meta = str(df.iloc[row_index, 1]).replace("%", "").strip()
-            meta_val = _to_number(raw_meta)
-            if meta_val == 0:
-                # se não encontrou número válido na célula da meta,
-                # procura na linha inteira o primeiro valor numérico > 0
-                row_values = df.iloc[row_index].tolist()
-                for v in row_values:
-                    num = _to_number(v)
-                    if num > 0:
-                        meta_val = num
-                        break
-            meta_percentual = meta_val / 100 if meta_val else 0
-            meta_objetivo = f"{meta_val}%" if meta_val else "0%"
+        churn_row_index = df[df.iloc[:, 0] == "Cancelamento - Churn"].index[0]
+        churn_data = df.iloc[churn_row_index + 1, :].dropna().tolist()
 
-            # === STATUS ===
-            status = str(df.iloc[row_index, 2]) if len(df.columns) > 2 else "-"
+        rnr_row_index = df[df.iloc[:, 0] == "RNR"].index[0]
+        rnr_data = df.iloc[rnr_row_index + 1, :].dropna().tolist()
 
-            # === DADOS SEMANAIS ===
-            data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
-            semanas = []
-            for i in range(0, len(data_row), 3):
-                try:
-                    periodo = data_row[i]
-                    total = _to_number(data_row[i + 1])
-                    cumprido = _to_number(data_row[i + 2])
-                    percentual = round(cumprido / total, 4) if total else 0
-                    semanas.append({
-                        "periodo": periodo,
-                        "total": total,
-                        "cumprido": cumprido,
-                        "percentual": percentual
-                    })
-                except Exception:
-                    break
+        csat_semanas = [
+            {"periodo": "04 a 08", "total": csat_data[0], "cumprido": csat_data[1], "percentual": csat_data[2]},
+            {"periodo": "11 a 15", "total": csat_data[3], "cumprido": csat_data[4], "percentual": csat_data[5]},
+            {"periodo": "18 a 22", "total": csat_data[6], "cumprido": csat_data[7], "percentual": csat_data[8]},
+            {"periodo": "25 a 29", "total": csat_data[9], "cumprido": csat_data[10], "percentual": csat_data[11]},
+            {"periodo": "Total Mês", "total": csat_data[12], "cumprido": csat_data[13], "percentual": csat_data[14]}
+        ]
 
-            total_mes = semanas[-1] if semanas else {"total": 0, "cumprido": 0, "percentual": 0}
-            status_final = _get_status(total_mes["percentual"], meta_percentual)
+        sla_semanas = [
+            {"periodo": "04 a 08", "total": sla_data[0], "cumprido": sla_data[1], "percentual": sla_data[2]},
+            {"periodo": "11 a 15", "total": sla_data[3], "cumprido": sla_data[4], "percentual": sla_data[5]},
+            {"periodo": "18 a 22", "total": sla_data[6], "cumprido": sla_data[7], "percentual": sla_data[8]},
+            {"periodo": "25 a 29", "total": sla_data[9], "cumprido": sla_data[10], "percentual": sla_data[11]},
+            {"periodo": "Total Mês", "total": sla_data[12], "cumprido": sla_data[13], "percentual": sla_data[14]}
+        ]
 
-            metrics_data.append({
-                "metrica": metrica,
-                "cor": cores.get(metrica, "#000"),
-                "meta_objetivo": meta_objetivo,
-                "meta_percentual": meta_percentual,
-                "semanas": semanas,
-                "total_mes": total_mes,
-                "status": status_final
-            })
+        cobertura_semanas = [
+            {"periodo": "04 a 08", "total": cobertura_data[0], "cumprido": cobertura_data[1], "percentual": cobertura_data[2]},
+            {"periodo": "11 a 15", "total": cobertura_data[3], "cumprido": cobertura_data[4], "percentual": cobertura_data[5]},
+            {"periodo": "18 a 22", "total": cobertura_data[6], "cumprido": cobertura_data[7], "percentual": cobertura_data[8]},
+            {"periodo": "25 a 29", "total": cobertura_data[9], "cumprido": cobertura_data[10], "percentual": cobertura_data[11]},
+            {"periodo": "Total Mês", "total": cobertura_data[12], "cumprido": cobertura_data[13], "percentual": cobertura_data[14]}
+        ]
 
+        churn_semanas = [
+            {"periodo": "04 a 08", "total": churn_data[0], "cumprido": churn_data[1], "percentual": churn_data[2]},
+            {"periodo": "11 a 15", "total": churn_data[3], "cumprido": churn_data[4], "percentual": churn_data[5]},
+            {"periodo": "18 a 22", "total": churn_data[6], "cumprido": churn_data[7], "percentual": churn_data[8]},
+            {"periodo": "25 a 29", "total": churn_data[9], "cumprido": churn_data[10], "percentual": churn_data[11]},
+            {"periodo": "Total Mês", "total": churn_data[12], "cumprido": churn_data[13], "percentual": churn_data[14]}
+        ]
+
+        rnr_semanas = [
+            {"periodo": "04 a 08", "total": rnr_data[0], "cumprido": rnr_data[1], "percentual": rnr_data[2]},
+            {"periodo": "11 a 15", "total": rnr_data[3], "cumprido": rnr_data[4], "percentual": rnr_data[5]},
+            {"periodo": "18 a 22", "total": rnr_data[6], "cumprido": rnr_data[7], "percentual": rnr_data[8]},
+            {"periodo": "25 a 29", "total": rnr_data[9], "cumprido": rnr_data[10], "percentual": rnr_data[11]},
+            {"periodo": "Total Mês", "total": rnr_data[12], "cumprido": rnr_data[13], "percentual": rnr_data[14]}
+        ]
+
+        metrics_data = [
+            {"metrica": "CSAT", "meta_objetivo": "95%", "meta_percentual": 0.95, "semanas": csat_semanas, "total_mes": {"total": csat_data[12], "cumprido": csat_data[13], "percentual": csat_data[14]}, "status": "Excelente" if float(csat_data[14]) >= 0.95 else "Atenção", "cor": "#00D9FF" if float(csat_data[14]) >= 0.95 else "#FF6B35"},
+            {"metrica": "SLA dos DS", "meta_objetivo": "82%", "meta_percentual": 0.82, "semanas": sla_semanas, "total_mes": {"total": sla_data[12], "cumprido": sla_data[13], "percentual": sla_data[14]}, "status": "Excelente" if float(sla_data[14]) >= 0.82 else "Atenção", "cor": "#00D9FF" if float(sla_data[14]) >= 0.82 else "#FF6B35"},
+            {"metrica": "Cobertura de Carteira", "meta_objetivo": "100%", "meta_percentual": 1.0, "semanas": cobertura_semanas, "total_mes": {"total": cobertura_data[12], "cumprido": cobertura_data[13], "percentual": cobertura_data[14]}, "status": "Excelente" if float(cobertura_data[14]) >= 1.0 else "Crítico" if float(cobertura_data[14]) < 0.6 else "Atenção", "cor": "#00D9FF" if float(cobertura_data[14]) >= 1.0 else "#8B5CF6" if float(cobertura_data[14]) < 0.6 else "#FF6B35"},
+            {"metrica": "Cancelamento - Churn", "meta_objetivo": "1%", "meta_percentual": 0.01, "semanas": churn_semanas, "total_mes": {"total": churn_data[12], "cumprido": churn_data[13], "percentual": churn_data[14]}, "status": "Excelente" if float(churn_data[14]) <= 0.01 else "Atenção", "cor": "#00D9FF" if float(churn_data[14]) <= 0.01 else "#FF6B35"},
+            {"metrica": "RNR", "meta_objetivo": "22.5%", "meta_percentual": 0.225, "semanas": rnr_semanas, "total_mes": {"total": rnr_data[12], "cumprido": rnr_data[13], "percentual": rnr_data[14]}, "status": "Excelente" if float(rnr_data[14]) <= 0.225 else "Atenção", "cor": "#00D9FF" if float(rnr_data[14]) <= 0.225 else "#FF6B35"}
+        ]
+        
         return jsonify({"success": True, "data": metrics_data})
-
+        
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": str(e)}), 500
 
-
-def _to_number(val):
-    """Converte qualquer valor em número (95% -> 95.0, '131' -> 131.0)."""
-    if pd.isna(val):
-        return 0
-    if isinstance(val, (int, float)):
-        return float(val)
+@dashboard_bp.route("/summary", methods=["GET"])
+def get_summary():
+    """Retorna um resumo geral das métricas"""
     try:
-        return float(str(val).replace("%", "").replace(",", ".").strip())
-    except:
-        return 0
+        excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
+        df = pd.read_excel(excel_path, header=None)
 
+        csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
+        csat_data = df.iloc[csat_row_index + 1, :].dropna().tolist()
 
-def _get_status(percentual, meta):
-    if percentual >= meta:
-        return "Excelente"
-    elif percentual >= meta * 0.9:
-        return "Atenção"
-    else:
-        return "Crítico"
+        sla_row_index = df[df.iloc[:, 0] == "SLA dos DS"].index[0]
+        sla_data = df.iloc[sla_row_index + 1, :].dropna().tolist()
 
+        cobertura_row_index = df[df.iloc[:, 0] == "Cobertura de Carteira"].index[0]
+        cobertura_data = df.iloc[cobertura_row_index + 1, :].dropna().tolist()
+
+        churn_row_index = df[df.iloc[:, 0] == "Cancelamento - Churn"].index[0]
+        churn_data = df.iloc[churn_row_index + 1, :].dropna().tolist()
+
+        rnr_row_index = df[df.iloc[:, 0] == "RNR"].index[0]
+        rnr_data = df.iloc[rnr_row_index + 1, :].dropna().tolist()
+
+        csat_meta_percent = csat_data[14]
+        sla_meta_percent = sla_data[14]
+        cobertura_meta_percent = cobertura_data[14]
+        churn_meta_percent = churn_data[14]
+        rnr_meta_percent = rnr_data[14]
+        
+        total_metrics = 5
+        metrics_above_target = 0
+        
+        if float(csat_meta_percent) >= 0.95: metrics_above_target += 1
+        if float(sla_meta_percent) >= 0.82: metrics_above_target += 1
+        if float(cobertura_meta_percent) >= 1.0: metrics_above_target += 1
+        if float(churn_meta_percent) <= 0.01: metrics_above_target += 1
+        if float(rnr_meta_percent) <= 0.225: metrics_above_target += 1
+        
+        metrics_below_target = total_metrics - metrics_above_target
+        
+        return jsonify({"success": True, "data": {"total_metrics": total_metrics, "metrics_above_target": metrics_above_target, "metrics_below_target": metrics_below_target, "performance_percentage": (metrics_above_target / total_metrics) * 100, "team_name": "Lendários"}})
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @dashboard_bp.route("/weekly-data", methods=["GET"])
 def get_weekly_data():
+    """Retorna dados semanais para gráficos de tendência"""
     try:
-        xls = load_excel()
-        if not xls:
-            return jsonify({"success": False, "error": "Erro ao carregar Excel"})
+        excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
+        df = pd.read_excel(excel_path, header=None)
 
-        df = pd.read_excel(xls, sheet_name="Métricas")
-        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
+        csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
+        csat_data = df.iloc[csat_row_index + 1, :].dropna().tolist()
 
-        semanas_labels = None
-        weekly_data = {"semanas": []}
+        sla_row_index = df[df.iloc[:, 0] == "SLA dos DS"].index[0]
+        sla_data = df.iloc[sla_row_index + 1, :].dropna().tolist()
 
-        for metrica in metricas:
-            row_index = df[df.iloc[:, 0] == metrica].index[0]
-            data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
+        cobertura_row_index = df[df.iloc[:, 0] == "Cobertura de Carteira"].index[0]
+        cobertura_data = df.iloc[cobertura_row_index + 1, :].dropna().tolist()
 
-            periodos, valores = [], []
-            for i in range(0, len(data_row), 3):
-                try:
-                    periodo = data_row[i]
-                    total = _to_number(data_row[i + 1])
-                    cumprido = _to_number(data_row[i + 2])
-                    percentual = round((cumprido / total) * 100, 2) if total else 0
-                    periodos.append(periodo)
-                    valores.append(percentual)
-                except Exception:
-                    break
+        churn_row_index = df[df.iloc[:, 0] == "Cancelamento - Churn"].index[0]
+        churn_data = df.iloc[churn_row_index + 1, :].dropna().tolist()
 
-            if semanas_labels is None:
-                semanas_labels = periodos
+        rnr_row_index = df[df.iloc[:, 0] == "RNR"].index[0]
+        rnr_data = df.iloc[rnr_row_index + 1, :].dropna().tolist()
 
-            weekly_data[metrica.lower().replace(" ", "_")] = valores
-
-        weekly_data["semanas"] = semanas_labels
+        weekly_data = {
+            "semanas": ["04-08", "11-15", "18-22", "25-29"],
+            "csat": [float(csat_data[2]) * 100, float(csat_data[5]) * 100, float(csat_data[8]) * 100, float(csat_data[11]) * 100 if csat_data[11] != 0 else 0],
+            "sla": [float(sla_data[2]) * 100, float(sla_data[5]) * 100, float(sla_data[8]) * 100, float(sla_data[11]) * 100 if sla_data[11] != 0 else 0],
+            "cobertura": [float(cobertura_data[2]) * 100, float(cobertura_data[5]) * 100, float(cobertura_data[8]) * 100, float(cobertura_data[11]) * 100 if cobertura_data[11] != 0 else 0],
+            "churn": [float(churn_data[2]) * 100, float(churn_data[5]) * 100, float(churn_data[8]) * 100, float(churn_data[11]) * 100 if churn_data[11] != 0 else 0],
+            "rnr": [float(rnr_data[2]) * 100, float(rnr_data[5]) * 100, float(rnr_data[8]) * 100, float(rnr_data[11]) * 100 if rnr_data[11] != 0 else 0]
+        }
+        
         return jsonify({"success": True, "data": weekly_data})
-
+        
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        return jsonify({"success": False, "error": str(e)}), 500
