@@ -11,7 +11,7 @@ excel_path = os.path.join(os.path.dirname(__file__), "upload", "dados.xlsx")
 def load_excel():
     try:
         return pd.ExcelFile(excel_path)
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -26,61 +26,61 @@ def get_metrics():
 
         metrics_data = []
 
-        # --- CSAT ---
-        csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
-        csat_data = df.iloc[csat_row_index + 1, :].dropna().tolist()
-        metrics_data.append(_build_metric("CSAT", "#00D9FF", csat_data))
+        # lista de métricas que realmente existem na planilha
+        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
+        cores = {
+            "CSAT": "#00D9FF",
+            "SLA dos DS": "#57A9FB",
+            "Cobertura de Carteira": "#8B5CF6",
+            "Cancelamento - Churn": "#FF6B35"
+        }
 
-        # --- SLA dos DS ---
-        sla_row_index = df[df.iloc[:, 0] == "SLA dos DS"].index[0]
-        sla_data = df.iloc[sla_row_index + 1, :].dropna().tolist()
-        metrics_data.append(_build_metric("SLA dos DS", "#00D9FF", sla_data))
+        for metrica in metricas:
+            row_index = df[df.iloc[:, 0] == metrica].index[0]
 
-        # --- Cobertura de Carteira ---
-        cobertura_row_index = df[df.iloc[:, 0] == "Cobertura de Carteira"].index[0]
-        cobertura_data = df.iloc[cobertura_row_index + 1, :].dropna().tolist()
-        metrics_data.append(_build_metric("Cobertura de Carteira", "#8B5CF6", cobertura_data))
+            meta_percentual = df.iloc[row_index, 1] / 100
+            meta_objetivo = f"{df.iloc[row_index, 1]}%"
 
-        # --- Cancelamento - Churn ---
-        churn_row_index = df[df.iloc[:, 0] == "Cancelamento - Churn"].index[0]
-        churn_data = df.iloc[churn_row_index + 1, :].dropna().tolist()
-        metrics_data.append(_build_metric("Cancelamento - Churn", "#FF6B35", churn_data))
+            # status vem da 3ª coluna
+            status = str(df.iloc[row_index, 2])
+
+            # dados da linha seguinte à métrica
+            data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
+
+            # os dados vêm em pares/trios: [periodo, total, cumprido, periodo, total, cumprido...]
+            semanas = []
+            for i in range(0, len(data_row), 3):
+                try:
+                    periodo = data_row[i]
+                    total = data_row[i + 1]
+                    cumprido = data_row[i + 2]
+                    percentual = round(cumprido / total, 4) if total else 0
+                    semanas.append({
+                        "periodo": periodo,
+                        "total": total,
+                        "cumprido": cumprido,
+                        "percentual": percentual
+                    })
+                except IndexError:
+                    break  # se faltar dado, para
+
+            total_mes = semanas[-1] if semanas else {"total": 0, "cumprido": 0, "percentual": 0}
+            status_final = _get_status(total_mes["percentual"], meta_percentual)
+
+            metrics_data.append({
+                "metrica": metrica,
+                "cor": cores.get(metrica, "#000"),
+                "meta_objetivo": meta_objetivo,
+                "meta_percentual": meta_percentual,
+                "semanas": semanas,
+                "total_mes": total_mes,
+                "status": status_final
+            })
 
         return jsonify({"success": True, "data": metrics_data})
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
-
-def _build_metric(name, color, data):
-    meta_percentual = data[0]
-    meta_objetivo = f"{int(meta_percentual*100)}%"
-    semanas = []
-
-    for i in range(1, len(data) - 2, 3):  # total, cumprido, percentual
-        periodo = data[i]
-        total = data[i + 1]
-        cumprido = data[i + 2]
-        percentual = round(cumprido / total, 4) if total else 0
-        semanas.append({
-            "periodo": periodo,
-            "total": total,
-            "cumprido": cumprido,
-            "percentual": percentual
-        })
-
-    total_mes = semanas[-1]
-    status = _get_status(total_mes["percentual"], meta_percentual)
-
-    return {
-        "metrica": name,
-        "cor": color,
-        "meta_objetivo": meta_objetivo,
-        "meta_percentual": meta_percentual,
-        "semanas": semanas,
-        "total_mes": total_mes,
-        "status": status
-    }
 
 
 def _get_status(percentual, meta):
@@ -101,39 +101,35 @@ def get_weekly_data():
 
         df = pd.read_excel(xls, sheet_name="Métricas")
 
-        # CSAT
-        csat_row_index = df[df.iloc[:, 0] == "CSAT"].index[0]
-        csat_data = df.iloc[csat_row_index + 1, :].dropna().tolist()
-        csat = [round(cumprido / total * 100, 2) if total else 0
-                for _, total, cumprido in zip(csat_data[1::3], csat_data[2::3], csat_data[3::3])]
+        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
-        # SLA
-        sla_row_index = df[df.iloc[:, 0] == "SLA dos DS"].index[0]
-        sla_data = df.iloc[sla_row_index + 1, :].dropna().tolist()
-        sla = [round(cumprido / total * 100, 2) if total else 0
-               for _, total, cumprido in zip(sla_data[1::3], sla_data[2::3], sla_data[3::3])]
+        semanas_labels = None
+        weekly_data = {"semanas": []}
 
-        # Cobertura
-        cobertura_row_index = df[df.iloc[:, 0] == "Cobertura de Carteira"].index[0]
-        cobertura_data = df.iloc[cobertura_row_index + 1, :].dropna().tolist()
-        cobertura = [round(cumprido / total * 100, 2) if total else 0
-                     for _, total, cumprido in zip(cobertura_data[1::3], cobertura_data[2::3], cobertura_data[3::3])]
+        for metrica in metricas:
+            row_index = df[df.iloc[:, 0] == metrica].index[0]
+            data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
 
-        # Churn
-        churn_row_index = df[df.iloc[:, 0] == "Cancelamento - Churn"].index[0]
-        churn_data = df.iloc[churn_row_index + 1, :].dropna().tolist()
-        churn = [round(cumprido / total * 100, 2) if total else 0
-                 for _, total, cumprido in zip(churn_data[1::3], churn_data[2::3], churn_data[3::3])]
+            periodos = []
+            valores = []
 
-        semanas = [p for p in csat_data[1::3]]  # pega só os períodos
+            for i in range(0, len(data_row), 3):
+                try:
+                    periodo = data_row[i]
+                    total = data_row[i + 1]
+                    cumprido = data_row[i + 2]
+                    percentual = round((cumprido / total) * 100, 2) if total else 0
+                    periodos.append(periodo)
+                    valores.append(percentual)
+                except IndexError:
+                    break
 
-        weekly_data = {
-            "semanas": semanas,
-            "csat": csat,
-            "sla": sla,
-            "cobertura": cobertura,
-            "churn": churn
-        }
+            if semanas_labels is None:
+                semanas_labels = periodos
+
+            weekly_data[metrica.lower().replace(" ", "_")] = valores
+
+        weekly_data["semanas"] = semanas_labels
 
         return jsonify({"success": True, "data": weekly_data})
 
