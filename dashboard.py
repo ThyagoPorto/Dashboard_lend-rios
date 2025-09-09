@@ -25,8 +25,6 @@ def get_metrics():
         df = pd.read_excel(xls, sheet_name="Métricas")
 
         metrics_data = []
-
-        # lista de métricas que realmente existem na planilha
         metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
         cores = {
             "CSAT": "#00D9FF",
@@ -38,22 +36,26 @@ def get_metrics():
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
 
-            meta_percentual = df.iloc[row_index, 1] / 100
-            meta_objetivo = f"{df.iloc[row_index, 1]}%"
+            # Meta (%)
+            meta_val = str(df.iloc[row_index, 1]).replace("%", "").strip()
+            try:
+                meta_percentual = float(meta_val) / 100
+            except:
+                meta_percentual = 0
+            meta_objetivo = f"{meta_val}%"
 
-            # status vem da 3ª coluna
+            # Status
             status = str(df.iloc[row_index, 2])
 
-            # dados da linha seguinte à métrica
+            # Linha de dados logo abaixo
             data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
 
-            # os dados vêm em pares/trios: [periodo, total, cumprido, periodo, total, cumprido...]
             semanas = []
             for i in range(0, len(data_row), 3):
                 try:
                     periodo = data_row[i]
-                    total = data_row[i + 1]
-                    cumprido = data_row[i + 2]
+                    total = _to_number(data_row[i + 1])
+                    cumprido = _to_number(data_row[i + 2])
                     percentual = round(cumprido / total, 4) if total else 0
                     semanas.append({
                         "periodo": periodo,
@@ -61,8 +63,8 @@ def get_metrics():
                         "cumprido": cumprido,
                         "percentual": percentual
                     })
-                except IndexError:
-                    break  # se faltar dado, para
+                except Exception:
+                    break
 
             total_mes = semanas[-1] if semanas else {"total": 0, "cumprido": 0, "percentual": 0}
             status_final = _get_status(total_mes["percentual"], meta_percentual)
@@ -83,6 +85,18 @@ def get_metrics():
         return jsonify({"success": False, "error": str(e)})
 
 
+def _to_number(val):
+    """Converte strings como '95%' ou '131' em float/int."""
+    if pd.isna(val):
+        return 0
+    if isinstance(val, (int, float)):
+        return val
+    try:
+        return float(str(val).replace("%", "").replace(",", ".").strip())
+    except:
+        return 0
+
+
 def _get_status(percentual, meta):
     if percentual >= meta:
         return "Excelente"
@@ -100,7 +114,6 @@ def get_weekly_data():
             return jsonify({"success": False, "error": "Erro ao carregar Excel"})
 
         df = pd.read_excel(xls, sheet_name="Métricas")
-
         metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
         semanas_labels = None
@@ -110,18 +123,16 @@ def get_weekly_data():
             row_index = df[df.iloc[:, 0] == metrica].index[0]
             data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
 
-            periodos = []
-            valores = []
-
+            periodos, valores = [], []
             for i in range(0, len(data_row), 3):
                 try:
                     periodo = data_row[i]
-                    total = data_row[i + 1]
-                    cumprido = data_row[i + 2]
+                    total = _to_number(data_row[i + 1])
+                    cumprido = _to_number(data_row[i + 2])
                     percentual = round((cumprido / total) * 100, 2) if total else 0
                     periodos.append(periodo)
                     valores.append(percentual)
-                except IndexError:
+                except Exception:
                     break
 
             if semanas_labels is None:
@@ -130,7 +141,6 @@ def get_weekly_data():
             weekly_data[metrica.lower().replace(" ", "_")] = valores
 
         weekly_data["semanas"] = semanas_labels
-
         return jsonify({"success": True, "data": weekly_data})
 
     except Exception as e:
