@@ -6,41 +6,111 @@
   <title>Dashboard - Métricas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
-    h1 { text-align: center; color: #333; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff; }
-    table, th, td { border: 1px solid #ddd; }
-    th, td { padding: 10px; text-align: center; }
-    th { background: #eee; }
-    .chart-container { width: 100%; max-width: 900px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f6f8;
+      color: #333;
+      line-height: 1.6;
+    }
+    header {
+      background: #4f46e5;
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    header img {
+      height: 40px;
+    }
+    main {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    h2 {
+      margin: 20px 0;
+      color: #111827;
+      font-size: 1.25rem;
+      border-left: 5px solid #4f46e5;
+      padding-left: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    table th, table td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+    table th {
+      background: #f9fafb;
+      font-weight: bold;
+      color: #374151;
+    }
+    table tr:hover {
+      background: #f1f5f9;
+    }
+    .chart-container {
+      width: 100%;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    canvas {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
-  <h1>Dashboard - Métricas</h1>
+  <header>
+    <img src="/static/images/logo.png" alt="Logo">
+    Dashboard Lendários
+  </header>
 
-  <h2>Tabela de Métricas</h2>
-  <table id="metrics-table">
-    <thead>
-      <tr>
-        <th>Métrica</th>
-        <th>Meta</th>
-        <th>Status</th>
-        <th>Total do Mês</th>
-        <th>% do Mês</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <main>
+    <h2>Tabela de Métricas</h2>
+    <table id="metrics-table">
+      <thead>
+        <tr>
+          <th>Métrica</th>
+          <th>Meta</th>
+          <th>Status</th>
+          <th>Total do Mês</th>
+          <th>% do Mês</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-  <div class="chart-container">
-    <h2>% Cumprimento por Métrica</h2>
-    <canvas id="metricsChart"></canvas>
-  </div>
+    <div class="chart-container">
+      <h2>% Cumprimento por Métrica</h2>
+      <canvas id="metricsChart"></canvas>
+    </div>
 
-  <div class="chart-container">
-    <h2>Tendência Semanal</h2>
-    <canvas id="weeklyChart"></canvas>
-  </div>
+    <div class="chart-container">
+      <h2>Tendência Semanal</h2>
+      <canvas id="weeklyChart"></canvas>
+    </div>
+  </main>
 
   <script>
     async function loadMetrics() {
@@ -59,7 +129,6 @@
         const values = [];
 
         metrics.forEach(m => {
-          // preencher tabela
           const row = `
             <tr>
               <td>${m.metrica}</td>
@@ -71,12 +140,10 @@
           `;
           tbody.innerHTML += row;
 
-          // dados para gráfico de barras
           labels.push(m.metrica);
           values.push((m.total_mes.percentual * 100).toFixed(2));
         });
 
-        // gráfico de barras
         const ctx = document.getElementById("metricsChart").getContext("2d");
         new Chart(ctx, {
           type: "bar",
