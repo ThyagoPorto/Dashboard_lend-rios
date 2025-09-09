@@ -1,829 +1,158 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Lendários - Customer Success</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100% );
-            min-height: 100vh;
-            color: #ffffff;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            position: relative;
-        }
-
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: linear-gradient(90deg, #00D9FF, #FF6B35, #8B5CF6);
-            border-radius: 2px;
-        }
-
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            background: linear-gradient(135deg, #00D9FF, #FF6B35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 800;
-            text-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .header h1 img {
-            height: 50px; /* Ajuste conforme necessário para o tamanho do troféu */
-            width: auto;
-        }
-
-        .header p {
-            font-size: 1.3rem;
-            opacity: 0.8;
-            color: #a0a0a0;
-        }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 12px 24px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid transparent;
-            border-radius: 25px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            font-weight: 600;
-        }
-
-        .filter-btn:hover {
-            background: rgba(0, 217, 255, 0.2);
-            border-color: #00D9FF;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 217, 255, 0.2);
-        }
-
-        .filter-btn.active {
-            background: linear-gradient(135deg, #00D9FF, #FF6B35);
-            border-color: #00D9FF;
-            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
-        }
-
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .summary-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 30px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .summary-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #00D9FF, #FF6B35, #8B5CF6);
-        }
-
-        .summary-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 217, 255, 0.2);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .summary-card h3 {
-            color: #a0a0a0;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .summary-card .value {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #00D9FF, #FF6B35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
-
-        .summary-card .label {
-            color: #666;
-            font-size: 0.95rem;
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .metric-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 30px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.4s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--metric-color, linear-gradient(90deg, #00D9FF, #FF6B35));
-        }
-
-        .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .metric-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        .metric-title {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .metric-status {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status-excelente {
-            background: linear-gradient(135deg, #00D9FF, #00B4D8);
-            box-shadow: 0 5px 15px rgba(0, 217, 255, 0.3);
-        }
-
-        .status-atencao {
-            background: linear-gradient(135deg, #FF6B35, #F77F00);
-            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
-        }
-
-        .status-critico {
-            background: linear-gradient(135deg, #8B5CF6, #7C3AED);
-            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.3);
-        }
-
-        .metric-values {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .value-item {
-            text-align: center;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .value-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
-        }
-
-        .value-item .number {
-            font-size: 2.2rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #00D9FF, #FF6B35);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .value-item .label {
-            font-size: 0.9rem;
-            color: #a0a0a0;
-            margin-top: 8px;
-            font-weight: 500;
-        }
-
-        .progress-container {
-            margin-bottom: 20px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            transition: width 1s ease;
-            border-radius: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-
-        .progress-text {
-            text-align: center;
-            font-weight: 600;
-            color: #ffffff;
-            font-size: 1.1rem;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 250px;
-            margin-top: 25px;
-        }
-
-        .weekly-trends {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 30px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 30px;
-        }
-
-        .weekly-trends h3 {
-            color: #ffffff;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #00D9FF;
-            font-size: 1.3rem;
-            font-weight: 600;
-        }
-
-        .loading::after {
-            content: '';
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 217, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #00D9FF;
-            animation: spin 1s ease-in-out infinite;
-            margin-left: 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .error {
-            background: linear-gradient(135deg, #FF6B35, #F77F00);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            text-align: center;
-            font-weight: 600;
-            box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
-        }
-
-        .metric-filter-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2.2rem;
-            }
-            
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .metric-values {
-                grid-template-columns: 1fr;
-            }
-
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Métricas</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
+    h1 { text-align: center; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 10px; text-align: center; }
+    th { background: #eee; }
+    .chart-container { width: 100%; max-width: 900px; margin: 40px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-             <h1><img id="team-icon" src="/static/icone mapa.png" alt="Ícone da Equipe"> Dashboard Lendários</h1>
-            <p>Equipe de Customer Success - Métricas e Performance</p>
-        </div>
+  <h1>Dashboard - Métricas</h1>
 
-        <div class="controls">
-            <button class="filter-btn active" onclick="showView('overview')">Visão Geral</button>
-            <button class="filter-btn" onclick="showView('weekly')">Análise Semanal</button>
-            <button class="filter-btn" onclick="showView('trends')">Tendências</button>
-        </div>
+  <h2>Tabela de Métricas</h2>
+  <table id="metrics-table">
+    <thead>
+      <tr>
+        <th>Métrica</th>
+        <th>Meta</th>
+        <th>Status</th>
+        <th>Total do Mês</th>
+        <th>% do Mês</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-        <div id="loading" class="loading">
-            Carregando dados do dashboard
-        </div>
+  <div class="chart-container">
+    <h2>% Cumprimento por Métrica</h2>
+    <canvas id="metricsChart"></canvas>
+  </div>
 
-        <div id="error" class="error" style="display: none;">
-            Erro ao carregar os dados. Tente novamente.
-        </div>
+  <div class="chart-container">
+    <h2>Tendência Semanal</h2>
+    <canvas id="weeklyChart"></canvas>
+  </div>
 
-        <div id="dashboard-content" style="display: none;">
-            <div class="summary-cards">
-                <div class="summary-card">
-                    <h3>Total de Métricas</h3>
-                    <div class="value" id="total-metrics">-</div>
-                    <div class="label">Métricas monitoradas</div>
-                </div>
-                <div class="summary-card">
-                    <h3>Metas Atingidas</h3>
-                    <div class="value" id="metrics-above-target">-</div>
-                    <div class="label">Acima do objetivo</div>
-                </div>
-                <div class="summary-card">
-                    <h3>Metas não Atingidas</h3>
-                    <div class="value" id="metrics-below-target">-</div>
-                    <div class="label">Abaixo do objetivo</div>
-                </div>
-                <div class="summary-card">
-                    <h3>Performance Geral</h3>
-                    <div class="value" id="performance-percentage">-</div>
-                    <div class="label">% de sucesso</div>
-                </div>
-            </div>
+  <script>
+    async function loadMetrics() {
+      try {
+        const res = await fetch("/api/dashboard/metrics");
+        const data = await res.json();
 
-            <div id="overview-view">
-                <div class="metrics-grid" id="metrics-container">
-                    <!-- Métricas serão inseridas aqui dinamicamente -->
-                </div>
-            </div>
+        if (!data.success) {
+          document.body.innerHTML += "<p>Erro ao carregar métricas</p>";
+          return;
+        }
 
-            <div id="weekly-view" style="display: none;">
-                <div class="metric-filter-buttons" id="weekly-metric-filter-buttons">
-                    <!-- Botões de filtro de métricas semanais serão inseridos aqui -->
-                </div>
-                <div class="metrics-grid" id="weekly-metrics-container">
-                    <!-- Métricas semanais serão inseridas aqui -->
-                </div>
-            </div>
+        const metrics = data.data;
+        const tbody = document.querySelector("#metrics-table tbody");
+        const labels = [];
+        const values = [];
 
-            <div id="trends-view" style="display: none;">
-                <div class="weekly-trends">
-                    <h3>📈 Tendências Semanais</h3>
-                    <div class="chart-container">
-                        <canvas id="trends-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        metrics.forEach(m => {
+          // preencher tabela
+          const row = `
+            <tr>
+              <td>${m.metrica}</td>
+              <td>${m.meta_objetivo}</td>
+              <td style="color:${m.cor}; font-weight:bold;">${m.status}</td>
+              <td>${m.total_mes.total}</td>
+              <td>${(m.total_mes.percentual * 100).toFixed(2)}%</td>
+            </tr>
+          `;
+          tbody.innerHTML += row;
 
-    <script>
-        let currentData = null;
-        let currentWeeklyData = null;
-        let currentView = 'overview';
-        let currentWeeklyMetricFilter = 'all'; // Novo filtro para métricas semanais
+          // dados para gráfico de barras
+          labels.push(m.metrica);
+          values.push((m.total_mes.percentual * 100).toFixed(2));
+        });
 
-        // Função para buscar dados do dashboard
-        async function fetchDashboardData() {
-            try {
-                const [metricsResponse, summaryResponse, weeklyResponse] = await Promise.all([
-                    fetch('/api/dashboard/metrics'),
-                    fetch('/api/dashboard/summary'),
-                    fetch('/api/dashboard/weekly-data')
-                ]);
-
-                if (!metricsResponse.ok || !summaryResponse.ok || !weeklyResponse.ok) {
-                    throw new Error('Erro ao buscar dados');
-                }
-
-                const metricsData = await metricsResponse.json();
-                const summaryData = await summaryResponse.json();
-                const weeklyData = await weeklyResponse.json();
-
-                if (!metricsData.success || !summaryData.success || !weeklyData.success) {
-                    throw new Error('Erro nos dados recebidos');
-                }
-
-                return {
-                    metrics: metricsData.data,
-                    summary: summaryData.data,
-                    weekly: weeklyData.data
-                };
-            } catch (error) {
-                console.error('Erro ao buscar dados:', error);
-                throw error;
+        // gráfico de barras
+        const ctx = document.getElementById("metricsChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "% Cumprimento (Total Mês)",
+              data: values,
+              backgroundColor: ["#00D9FF", "#57A9FB", "#8B5CF6", "#FF6B35"]
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 120,
+                ticks: { callback: value => value + "%" }
+              }
             }
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML += "<p>Erro ao buscar dados da API.</p>";
+      }
+    }
+
+    async function loadWeeklyData() {
+      try {
+        const res = await fetch("/api/dashboard/weekly-data");
+        const data = await res.json();
+
+        if (!data.success) {
+          document.body.innerHTML += "<p>Erro ao carregar dados semanais</p>";
+          return;
         }
 
-        // Função para renderizar o resumo
-        function renderSummary(summaryData) {
-            document.getElementById('total-metrics').textContent = summaryData.total_metrics;
-            document.getElementById('metrics-above-target').textContent = summaryData.metrics_above_target;
-            document.getElementById('metrics-below-target').textContent = summaryData.metrics_below_target;
-            document.getElementById('performance-percentage').textContent = summaryData.performance_percentage.toFixed(1) + '%';
-        }
+        const weekly = data.data;
 
-        // Função para criar um card de métrica
-        function createMetricCard(metric) {
-            const statusClass = `status-${metric.status.toLowerCase()}`;
-            
-            return `
-                <div class="metric-card" style="--metric-color: ${metric.cor}">
-                    <div class="metric-header">
-                        <div class="metric-title">${metric.metrica}</div>
-                        <div class="metric-status ${statusClass}">${metric.status}</div>
-                    </div>
-                    
-                    <div class="metric-values">
-                        <div class="value-item">
-                            <div class="number">${metric.total_mes.total}</div>
-                            <div class="label">Total</div>
-                        </div>
-                        <div class="value-item">
-                            <div class="number">${metric.total_mes.cumprido}</div>
-                            <div class="label">${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? 'Ocorrências' : 'Cumprido'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${metric.total_mes.percentual * 100}%; background: ${metric.cor};"></div>
-                        </div>
-                        <div class="progress-text">
-                            ${(metric.total_mes.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
-                        </div>
-                    </div>
-                    
-                    <div class="chart-container">
-                        <canvas id="chart-${metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-')}"></canvas>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Função para criar card semanal
-        function createWeeklyCard(metric, semana) {
-            if (semana.periodo === 'Total Mês') return '';
-
-            const statusClass = 
-                metric.metrica.includes('Churn') || metric.metrica.includes('RNR') 
-                    ? (semana.percentual <= metric.meta_percentual ? 'status-excelente' : 'status-atencao')
-                    : (semana.percentual >= metric.meta_percentual ? 'status-excelente' : 'status-atencao');
-            
-            const status = 
-                metric.metrica.includes('Churn') || metric.metrica.includes('RNR') 
-                    ? (semana.percentual <= metric.meta_percentual ? 'Excelente' : 'Atenção')
-                    : (semana.percentual >= metric.meta_percentual ? 'Excelente' : 'Atenção');
-            
-            return `
-                <div class="metric-card" style="--metric-color: ${metric.cor}">
-                    <div class="metric-header">
-                        <div class="metric-title">${metric.metrica} - ${semana.periodo}</div>
-                        <div class="metric-status ${statusClass}">${status}</div>
-                    </div>
-                    
-                    <div class="metric-values">
-                        <div class="value-item">
-                            <div class="number">${semana.total}</div>
-                            <div class="label">Total</div>
-                        </div>
-                        <div class="value-item">
-                            <div class="number">${semana.cumprido}</div>
-                            <div class="label">${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? 'Ocorrências' : 'Cumprido'}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-container">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${semana.percentual * 100}%; background: ${metric.cor};"></div>
-                        </div>
-                        <div class="progress-text">
-                            ${(semana.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Função para criar gráfico de uma métrica
-        function createChart(metric) {
-            const canvasId = `chart-${metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-')}`;
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Cumprido', 'Restante'],
-                    datasets: [{
-                        data: [metric.total_mes.cumprido, metric.total_mes.total - metric.total_mes.cumprido],
-                        backgroundColor: [metric.cor, 'rgba(255, 255, 255, 0.1)'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                color: '#ffffff'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Função para criar gráfico de tendências
-        function createTrendsChart(weeklyData) {
-            const ctx = document.getElementById('trends-chart').getContext('2d');
-            
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: weeklyData.semanas,
-                    datasets: [
-                        {
-                            label: 'CSAT (%)',
-                            data: weeklyData.csat,
-                            borderColor: '#00D9FF',
-                            backgroundColor: 'rgba(0, 217, 255, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'SLA dos DS (%)',
-                            data: weeklyData.sla,
-                            borderColor: '#FF6B35',
-                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'Cobertura de Carteira (%)',
-                            data: weeklyData.cobertura,
-                            borderColor: '#8B5CF6',
-                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'Cancelamento - Churn (%)',
-                            data: weeklyData.churn,
-                            borderColor: '#FBE842',
-                            backgroundColor: 'rgba(251, 232, 66, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'RNR (%)',
-                            data: weeklyData.rnr,
-                            borderColor: '#A9AEB8',
-                            backgroundColor: 'rgba(169, 174, 184, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: '#ffffff'
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                color: '#ffffff'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        },
-                        y: {
-                            ticks: {
-                                color: '#ffffff'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Função para renderizar as métricas
-        function renderMetrics(metricsData) {
-            const container = document.getElementById('metrics-container');
-            container.innerHTML = metricsData.map(createMetricCard).join('');
-            
-            // Criar gráficos após inserir os cards no DOM
-            setTimeout(() => {
-                metricsData.forEach(createChart);
-            }, 100);
-        }
-
-        // Função para renderizar métricas semanais com filtro
-        function renderWeeklyMetrics(metricsData, filterMetric = 'all') {
-            const container = document.getElementById('weekly-metrics-container');
-            let html = '';
-            
-            const filteredMetrics = filterMetric === 'all' 
-                ? metricsData 
-                : metricsData.filter(metric => metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-') === filterMetric);
-
-            filteredMetrics.forEach(metric => {
-                metric.semanas.forEach(semana => {
-                    html += createWeeklyCard(metric, semana);
-                });
-            });
-            
-            container.innerHTML = html;
-        }
-
-        // Função para criar botões de filtro de métricas semanais
-        function createWeeklyMetricFilterButtons(metricsData) {
-            const container = document.getElementById('weekly-metric-filter-buttons');
-            let buttonsHtml = '';
-
-            // Adicionar botão 'Todas' por padrão
-            buttonsHtml += `<button class="filter-btn ${currentWeeklyMetricFilter === 'all' ? 'active' : ''}" onclick="filterWeeklyMetrics('all')">Todas</button>`;
-
-            metricsData.forEach(metric => {
-                const metricId = metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-');
-                buttonsHtml += `<button class="filter-btn ${currentWeeklyMetricFilter === metricId ? 'active' : ''}" onclick="filterWeeklyMetrics('${metricId}')">${metric.metrica}</button>`;
-            });
-            container.innerHTML = buttonsHtml;
-        }
-
-        // Função para filtrar as métricas semanais
-        function filterWeeklyMetrics(metricId) {
-            currentWeeklyMetricFilter = metricId;
-            createWeeklyMetricFilterButtons(currentData.metrics);
-            renderWeeklyMetrics(currentData.metrics, currentWeeklyMetricFilter);
-        }
-
-        // Função para mostrar diferentes views
-        function showView(view) {
-            // Atualizar botões principais
-            document.querySelectorAll('.controls .filter-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.controls .filter-btn[onclick="showView('${view}')"]`).classList.add('active');
-            
-            // Esconder todas as views
-            document.getElementById('overview-view').style.display = 'none';
-            document.getElementById('weekly-view').style.display = 'none';
-            document.getElementById('trends-view').style.display = 'none';
-            
-            // Mostrar view selecionada
-            currentView = view;
-            
-            if (view === 'overview') {
-                document.getElementById('overview-view').style.display = 'block';
-            } else if (view === 'weekly') {
-                document.getElementById('weekly-view').style.display = 'block';
-                if (currentData) {
-                    createWeeklyMetricFilterButtons(currentData.metrics);
-                    renderWeeklyMetrics(currentData.metrics, currentWeeklyMetricFilter);
-                }
-            } else if (view === 'trends') {
-                document.getElementById('trends-view').style.display = 'block';
-                if (currentWeeklyData) {
-                    setTimeout(() => createTrendsChart(currentWeeklyData), 100);
-                }
+        const ctx = document.getElementById("weeklyChart").getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: weekly.semanas,
+            datasets: [
+              { label: "CSAT", data: weekly.csat, borderColor: "#00D9FF", fill: false },
+              { label: "SLA", data: weekly.sla, borderColor: "#57A9FB", fill: false },
+              { label: "Cobertura", data: weekly.cobertura, borderColor: "#8B5CF6", fill: false },
+              { label: "Churn", data: weekly.churn, borderColor: "#FF6B35", fill: false }
+            ]
+          },
+          options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            stacked: false,
+            plugins: {
+              tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(2) + "%" } }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 120,
+                ticks: { callback: value => value + "%" }
+              }
             }
-        }
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        document.body.innerHTML += "<p>Erro ao buscar dados semanais.</p>";
+      }
+    }
 
-        // Função principal para carregar o dashboard
-        async function loadDashboard() {
-            try {
-                const data = await fetchDashboardData();
-                currentData = data;
-                currentWeeklyData = data.weekly;
-                
-                renderSummary(data.summary);
-                renderMetrics(data.metrics);
-                
-                // Se a view atual for semanal, renderizar os botões de filtro e as métricas semanais
-                if (currentView === 'weekly') {
-                    createWeeklyMetricFilterButtons(currentData.metrics);
-                    renderWeeklyMetrics(currentData.metrics, currentWeeklyMetricFilter);
-                }
-                
-                // Mostrar conteúdo e esconder loading
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('dashboard-content').style.display = 'block';
-                
-            } catch (error) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-            }
-        }
-
-        // Carregar dashboard quando a página estiver pronta
-        document.addEventListener('DOMContentLoaded', loadDashboard);
-
-        // Atualizar dashboard a cada 30 segundos
-        setInterval(loadDashboard, 30000);
-    </script>
+    loadMetrics();
+    loadWeeklyData();
+  </script>
 </body>
 </html>
-
