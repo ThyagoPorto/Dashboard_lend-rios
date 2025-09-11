@@ -532,7 +532,7 @@
                         </div>
                         <div class="value-item">
                             <div class="number">${metric.total_mes.cumprido}</div>
-                            <div class="label">${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? 'Ocorrências' : 'Cumprido'}</div>
+                            <div class="label">${metric.metrica.includes('Churn') ? 'Ocorrências' : 'Cumprido'}</div>
                         </div>
                     </div>
                     
@@ -541,7 +541,7 @@
                             <div class="progress-fill" style="width: ${metric.total_mes.percentual * 100}%; background: ${metric.cor};"></div>
                         </div>
                         <div class="progress-text">
-                            ${(metric.total_mes.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
+                            ${(metric.total_mes.percentual * 100).toFixed(1)}% ${(metric.metrica.includes('Churn') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')')}
                         </div>
                     </div>
                     
@@ -557,12 +557,12 @@
             if (semana.periodo === 'Total Mês') return '';
 
             const statusClass = 
-                metric.metrica.includes('Churn') || metric.metrica.includes('RNR') 
+                metric.metrica.includes('Churn') 
                     ? (semana.percentual <= metric.meta_percentual ? 'status-excelente' : 'status-atencao')
                     : (semana.percentual >= metric.meta_percentual ? 'status-excelente' : 'status-atencao');
             
             const status = 
-                metric.metrica.includes('Churn') || metric.metrica.includes('RNR') 
+                metric.metrica.includes('Churn') 
                     ? (semana.percentual <= metric.meta_percentual ? 'Excelente' : 'Atenção')
                     : (semana.percentual >= metric.meta_percentual ? 'Excelente' : 'Atenção');
             
@@ -580,7 +580,7 @@
                         </div>
                         <div class="value-item">
                             <div class="number">${semana.cumprido}</div>
-                            <div class="label">${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? 'Ocorrências' : 'Cumprido'}</div>
+                            <div class="label">${metric.metrica.includes('Churn') ? 'Ocorrências' : 'Cumprido'}</div>
                         </div>
                     </div>
                     
@@ -589,7 +589,7 @@
                             <div class="progress-fill" style="width: ${semana.percentual * 100}%; background: ${metric.cor};"></div>
                         </div>
                         <div class="progress-text">
-                            ${(semana.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') || metric.metrica.includes('RNR') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
+                            ${(semana.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
                         </div>
                     </div>
                 </div>
@@ -628,7 +628,7 @@
             });
         }
 
-        // Função para criar gráfico de tendências
+        // Função para criar gráfico de tendências (sem RNR)
         function createTrendsChart(weeklyData) {
             const ctx = document.getElementById('trends-chart').getContext('2d');
             
@@ -666,14 +666,6 @@
                             data: weeklyData.churn,
                             borderColor: '#FBE842',
                             backgroundColor: 'rgba(251, 232, 66, 0.1)',
-                            tension: 0.4,
-                            fill: true
-                        },
-                        {
-                            label: 'RNR (%)',
-                            data: weeklyData.rnr,
-                            borderColor: '#A9AEB8',
-                            backgroundColor: 'rgba(169, 174, 184, 0.1)',
                             tension: 0.4,
                             fill: true
                         }
