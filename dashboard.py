@@ -33,20 +33,25 @@ def get_metrics():
             "Cancelamento - Churn": "#FF6B35"
         }
 
+        # METAS FIXAS DO MÊS (conforme informado)
+        metas_fixas = {
+            "CSAT": 95,
+            "SLA dos DS": 82,
+            "Cobertura de Carteira": 100,
+            "Cancelamento - Churn": 1
+        }
+
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
 
-            # === CORREÇÃO: LER META DA COLUNA CORRETA ===
-            # Meta está na linha da métrica, coluna O (índice 14)
-            raw_meta = df.iloc[row_index, 14]  # Coluna O - "Total da Meta Mês"
-            meta_val = _to_number(raw_meta)
-            meta_percentual = meta_val / 100 if meta_val else 0
-            meta_objetivo = f"{meta_val}%" if meta_val else "0%"
+            # USAR META FIXA DO MÊS
+            meta_val = metas_fixas.get(metrica, 0)
+            meta_percentual = meta_val / 100
+            meta_objetivo = f"{meta_val}%"
 
-            # === CORREÇÃO: LER DADOS DO MÊS DA COLUNA CORRETA ===
-            # Dados do mês estão na linha abaixo da métrica, colunas O, P, Q
-            total_mes_total = _to_number(df.iloc[row_index + 1, 14])  # Coluna O - "Total de CSAT", "Total de Ds", etc.
-            total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])  # Coluna P - "Total CSAT acima de 4", etc.
+            # Ler dados do mês das colunas O, P (índices 14, 15)
+            total_mes_total = _to_number(df.iloc[row_index + 1, 14])  # Coluna O
+            total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])  # Coluna P
             
             # Calcular percentual manualmente
             if total_mes_total > 0:
@@ -54,19 +59,18 @@ def get_metrics():
             else:
                 total_mes_percentual = 0
 
-            # === CORREÇÃO: LER DADOS SEMANAIS DAS COLUNAS CORRETAS ===
+            # Ler dados semanais das colunas B, E, H, K
             semanas = []
-            # Colunas das semanas: B, E, H, K (índices 1, 4, 7, 10)
-            colunas_semanas = [1, 4, 7, 10]
+            colunas_semanas = [1, 4, 7, 10]  # Colunas B, E, H, K
             
             for col_index in colunas_semanas:
                 try:
-                    periodo = df.iloc[row_index, col_index]  # Nome da semana (ex: "04 á 08")
+                    periodo = df.iloc[row_index, col_index]
                     if pd.isna(periodo) or periodo == "":
                         continue
                         
-                    total = _to_number(df.iloc[row_index + 1, col_index])  # Total da semana
-                    cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])  # Cumprido da semana
+                    total = _to_number(df.iloc[row_index + 1, col_index])
+                    cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
                     
                     if total > 0:
                         percentual = cumprido / total
@@ -91,6 +95,7 @@ def get_metrics():
                 "cor": cores.get(metrica, "#000"),
                 "meta_objetivo": meta_objetivo,
                 "meta_percentual": meta_percentual,
+                "meta_valor": meta_val,  # Adicionando o valor numérico da meta
                 "semanas": semanas,
                 "total_mes": {
                     "total": total_mes_total,
@@ -195,13 +200,21 @@ def get_summary():
         metrics_above_target = 0
         metrics_below_target = 0
 
+        # METAS FIXAS DO MÊS (conforme informado)
+        metas_fixas = {
+            "CSAT": 95,
+            "SLA dos DS": 82,
+            "Cobertura de Carteira": 100,
+            "Cancelamento - Churn": 1
+        }
+
         for metrica in metricas:
             try:
                 row_index = df[df.iloc[:, 0] == metrica].index[0]
                 
-                # Ler meta da coluna O
-                meta_val = _to_number(df.iloc[row_index, 14])
-                meta_percentual = meta_val / 100 if meta_val else 0
+                # USAR META FIXA DO MÊS
+                meta_val = metas_fixas.get(metrica, 0)
+                meta_percentual = meta_val / 100
                 
                 # Ler dados do mês das colunas O, P
                 total_mes_total = _to_number(df.iloc[row_index + 1, 14])
