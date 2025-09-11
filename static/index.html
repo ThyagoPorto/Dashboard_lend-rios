@@ -119,6 +119,7 @@
             transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
+            text-align: center;
         }
 
         .summary-card::before {
@@ -161,7 +162,7 @@
 
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 30px;
             margin-bottom: 40px;
         }
@@ -169,7 +170,7 @@
         .metric-card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
-            padding: 30px;
+            padding: 25px;
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.4s ease;
@@ -196,21 +197,21 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 10px;
         }
 
         .metric-title {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 700;
             color: #ffffff;
         }
 
         .metric-status {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
             font-weight: 600;
             color: white;
             text-transform: uppercase;
@@ -235,89 +236,63 @@
         .metric-values {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
+            gap: 15px;
+            margin-bottom: 20px;
         }
 
         .value-item {
             text-align: center;
-            padding: 20px;
+            padding: 15px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
+            border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .value-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
         }
 
         .value-item .number {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 800;
             background: linear-gradient(135deg, #00D9FF, #FF6B35);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            margin-bottom: 5px;
         }
 
         .value-item .label {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             color: #a0a0a0;
-            margin-top: 8px;
             font-weight: 500;
         }
 
         .progress-container {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .progress-bar {
             width: 100%;
-            height: 12px;
+            height: 10px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
+            border-radius: 5px;
             overflow: hidden;
-            margin-bottom: 15px;
-            position: relative;
+            margin-bottom: 10px;
         }
 
         .progress-fill {
             height: 100%;
-            transition: width 1s ease;
-            border-radius: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+            border-radius: 5px;
         }
 
         .progress-text {
             text-align: center;
             font-weight: 600;
             color: #ffffff;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
         .chart-container {
             position: relative;
-            height: 250px;
-            margin-top: 25px;
+            height: 200px;
+            margin-top: 20px;
         }
 
         .weekly-trends {
@@ -385,6 +360,13 @@
             color: #a0a0a0;
             font-size: 1.1rem;
             grid-column: 1 / -1;
+        }
+
+        .week-period {
+            font-size: 0.9rem;
+            color: #00D9FF;
+            margin-bottom: 5px;
+            font-weight: 600;
         }
 
         @media (max-width: 768px) {
@@ -562,7 +544,7 @@
             document.getElementById('performance-percentage').textContent = summaryData.performance_percentage.toFixed(1) + '%';
         }
 
-        // Função para criar um card de métrica
+        // Função para criar um card de métrica (VISÃO GERAL - como nos prints)
         function createMetricCard(metric) {
             const statusClass = `status-${metric.status.toLowerCase()}`;
             
@@ -589,20 +571,16 @@
                             <div class="progress-fill" style="width: ${metric.total_mes.percentual * 100}%; background: ${metric.cor};"></div>
                         </div>
                         <div class="progress-text">
-                            ${(metric.total_mes.percentual * 100).toFixed(1)}% ${(metric.metrica.includes('Churn') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')')}
+                            ${(metric.total_mes.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
                         </div>
-                    </div>
-                    
-                    <div class="chart-container">
-                        <canvas id="chart-${metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-')}"></canvas>
                     </div>
                 </div>
             `;
         }
 
-        // Função para criar card semanal (COM VALIDAÇÃO PARA EVITAR DUPLICAÇÃO)
+        // Função para criar card semanal (ANÁLISE SEMANAL - como nos prints)
         function createWeeklyCard(metric, semana) {
-            // VALIDAÇÃO CRÍTICA: Não criar card para semanas inválidas, vazias ou duplicadas
+            // VALIDAÇÃO: Não criar card para semanas inválidas
             if (!semana.periodo || semana.periodo === 'Total Mês' || semana.total === 0 || 
                 typeof semana.total !== 'number' || isNaN(semana.total)) {
                 return '';
@@ -646,38 +624,6 @@
                     </div>
                 </div>
             `;
-        }
-
-        // Função para criar gráfico de uma métrica
-        function createChart(metric) {
-            const canvasId = `chart-${metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-')}`;
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Cumprido', 'Restante'],
-                    datasets: [{
-                        data: [metric.total_mes.cumprido, metric.total_mes.total - metric.total_mes.cumprido],
-                        backgroundColor: [metric.cor, 'rgba(255, 255, 255, 0.1)'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                padding: 20,
-                                usePointStyle: true,
-                                color: '#ffffff'
-                            }
-                        }
-                    }
-                }
-            });
         }
 
         // Função para criar gráfico de tendências
@@ -755,18 +701,13 @@
             });
         }
 
-        // Função para renderizar as métricas
+        // Função para renderizar as métricas (VISÃO GERAL)
         function renderMetrics(metricsData) {
             const container = document.getElementById('metrics-container');
             container.innerHTML = metricsData.map(createMetricCard).join('');
-            
-            // Criar gráficos após inserir os cards no DOM
-            setTimeout(() => {
-                metricsData.forEach(createChart);
-            }, 100);
         }
 
-        // Função para renderizar métricas semanais com filtro (CORRIGIDA)
+        // Função para renderizar métricas semanais com filtro (ANÁLISE SEMANAL)
         function renderWeeklyMetrics(metricsData, filterMetric = 'all') {
             const container = document.getElementById('weekly-metrics-container');
             let html = '';
