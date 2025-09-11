@@ -151,3 +151,77 @@ def get_weekly_data():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+@dashboard_bp.route("/summary", methods=["GET"])
+def get_summary():
+    try:
+        xls = load_excel()
+        if not xls:
+            return jsonify({"success": False, "error": "Erro ao carregar Excel"})
+
+        df = pd.read_excel(xls, sheet_name="Métricas")
+        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
+
+        total_metrics = len(metricas)
+        metrics_above_target = 0
+        metrics_below_target = 0
+
+        for metrica in metricas:
+            try:
+                row_index = df[df.iloc[:, 0] == metrica].index[0]
+                
+                # Obter meta
+                raw_meta = str(df.iloc[row_index, 1]).replace("%", "").strip()
+                meta_val = _to_number(raw_meta)
+                meta_percentual = meta_val / 100 if meta_val else 0
+                
+                # Obter dados do mês
+                data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
+                semanas = []
+                for i in range(0, len(data_row), 3):
+                    try:
+                        periodo = data_row[i]
+                        total = _to_number(data_row[i + 1])
+                        cumprido = _to_number(data_row[i + 2])
+                        percentual = round(cumprido / total, 4) if total else 0
+                        semanas.append({
+                            "periodo": periodo,
+                            "total": total,
+                            "cumprido": cumprido,
+                            "percentual": percentual
+                        })
+                    except Exception:
+                        break
+                
+                if semanas:
+                    total_mes = semanas[-1]
+                    # Verificar se atingiu a meta (lógica invertida para Churn)
+                    if "Churn" in metrica:
+                        if total_mes["percentual"] <= meta_percentual:
+                            metrics_above_target += 1
+                        else:
+                            metrics_below_target += 1
+                    else:
+                        if total_mes["percentual"] >= meta_percentual:
+                            metrics_above_target += 1
+                        else:
+                            metrics_below_target += 1
+                            
+            except Exception:
+                continue
+
+        performance_percentage = (metrics_above_target / total_metrics) * 100 if total_metrics > 0 else 0
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "total_metrics": total_metrics,
+                "metrics_above_target": metrics_above_target,
+                "metrics_below_target": metrics_below_target,
+                "performance_percentage": performance_percentage
+            }
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
