@@ -36,44 +36,55 @@ def get_metrics():
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
 
-            # === META ===
-            raw_meta = str(df.iloc[row_index, 1]).replace("%", "").strip()
+            # === CORREÇÃO: LER META DA COLUNA CORRETA ===
+            # Meta está na linha da métrica, coluna O (índice 14)
+            raw_meta = df.iloc[row_index, 14]  # Coluna O - "Total da Meta Mês"
             meta_val = _to_number(raw_meta)
-            if meta_val == 0:
-                # se não encontrou número válido na célula da meta,
-                # procura na linha inteira o primeiro valor numérico > 0
-                row_values = df.iloc[row_index].tolist()
-                for v in row_values:
-                    num = _to_number(v)
-                    if num > 0:
-                        meta_val = num
-                        break
             meta_percentual = meta_val / 100 if meta_val else 0
             meta_objetivo = f"{meta_val}%" if meta_val else "0%"
 
-            # === STATUS ===
-            status = str(df.iloc[row_index, 2]) if len(df.columns) > 2 else "-"
+            # === CORREÇÃO: LER DADOS DO MÊS DA COLUNA CORRETA ===
+            # Dados do mês estão na linha abaixo da métrica, colunas O, P, Q
+            total_mes_total = _to_number(df.iloc[row_index + 1, 14])  # Coluna O - "Total de CSAT", "Total de Ds", etc.
+            total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])  # Coluna P - "Total CSAT acima de 4", etc.
+            
+            # Calcular percentual manualmente
+            if total_mes_total > 0:
+                total_mes_percentual = total_mes_cumprido / total_mes_total
+            else:
+                total_mes_percentual = 0
 
-            # === DADOS SEMANAIS ===
-            data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
+            # === CORREÇÃO: LER DADOS SEMANAIS DAS COLUNAS CORRETAS ===
             semanas = []
-            for i in range(0, len(data_row), 3):
+            # Colunas das semanas: B, E, H, K (índices 1, 4, 7, 10)
+            colunas_semanas = [1, 4, 7, 10]
+            
+            for col_index in colunas_semanas:
                 try:
-                    periodo = data_row[i]
-                    total = _to_number(data_row[i + 1])
-                    cumprido = _to_number(data_row[i + 2])
-                    percentual = round(cumprido / total, 4) if total else 0
+                    periodo = df.iloc[row_index, col_index]  # Nome da semana (ex: "04 á 08")
+                    if pd.isna(periodo) or periodo == "":
+                        continue
+                        
+                    total = _to_number(df.iloc[row_index + 1, col_index])  # Total da semana
+                    cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])  # Cumprido da semana
+                    
+                    if total > 0:
+                        percentual = cumprido / total
+                    else:
+                        percentual = 0
+                        
                     semanas.append({
-                        "periodo": periodo,
+                        "periodo": str(periodo),
                         "total": total,
                         "cumprido": cumprido,
                         "percentual": percentual
                     })
-                except Exception:
-                    break
+                except Exception as e:
+                    print(f"Erro ao processar semana: {e}")
+                    continue
 
-            total_mes = semanas[-1] if semanas else {"total": 0, "cumprido": 0, "percentual": 0}
-            status_final = _get_status(total_mes["percentual"], meta_percentual)
+            # Determinar status baseado no percentual e meta
+            status_final = _get_status(total_mes_percentual, meta_percentual)
 
             metrics_data.append({
                 "metrica": metrica,
@@ -81,7 +92,11 @@ def get_metrics():
                 "meta_objetivo": meta_objetivo,
                 "meta_percentual": meta_percentual,
                 "semanas": semanas,
-                "total_mes": total_mes,
+                "total_mes": {
+                    "total": total_mes_total,
+                    "cumprido": total_mes_cumprido,
+                    "percentual": total_mes_percentual
+                },
                 "status": status_final
             })
 
@@ -92,13 +107,15 @@ def get_metrics():
 
 
 def _to_number(val):
-    """Converte qualquer valor em número (95% -> 95.0, '131' -> 131.0)."""
+    """Converte qualquer valor em número."""
     if pd.isna(val):
         return 0
     if isinstance(val, (int, float)):
         return float(val)
     try:
-        return float(str(val).replace("%", "").replace(",", ".").strip())
+        # Remove porcentagens, vírgulas, etc.
+        cleaned = str(val).replace("%", "").replace(",", ".").strip()
+        return float(cleaned)
     except:
         return 0
 
@@ -122,31 +139,42 @@ def get_weekly_data():
         df = pd.read_excel(xls, sheet_name="Métricas")
         metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
-        semanas_labels = None
         weekly_data = {"semanas": []}
+        semanas_coletadas = False
 
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
-            data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
-
-            periodos, valores = [], []
-            for i in range(0, len(data_row), 3):
+            
+            # Coletar dados das semanas
+            valores = []
+            colunas_semanas = [1, 4, 7, 10]  # Colunas B, E, H, K
+            
+            for col_index in colunas_semanas:
                 try:
-                    periodo = data_row[i]
-                    total = _to_number(data_row[i + 1])
-                    cumprido = _to_number(data_row[i + 2])
-                    percentual = round((cumprido / total) * 100, 2) if total else 0
-                    periodos.append(periodo)
+                    periodo = df.iloc[row_index, col_index]
+                    if pd.isna(periodo) or periodo == "":
+                        continue
+                        
+                    total = _to_number(df.iloc[row_index + 1, col_index])
+                    cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
+                    
+                    if total > 0:
+                        percentual = (cumprido / total) * 100
+                    else:
+                        percentual = 0
+                        
                     valores.append(percentual)
+                    
+                    # Coletar labels das semanas apenas uma vez
+                    if not semanas_coletadas:
+                        weekly_data["semanas"].append(str(periodo))
+                        
                 except Exception:
-                    break
-
-            if semanas_labels is None:
-                semanas_labels = periodos
-
+                    continue
+            
+            semanas_coletadas = True
             weekly_data[metrica.lower().replace(" ", "_")] = valores
 
-        weekly_data["semanas"] = semanas_labels
         return jsonify({"success": True, "data": weekly_data})
 
     except Exception as e:
@@ -171,43 +199,31 @@ def get_summary():
             try:
                 row_index = df[df.iloc[:, 0] == metrica].index[0]
                 
-                # Obter meta
-                raw_meta = str(df.iloc[row_index, 1]).replace("%", "").strip()
-                meta_val = _to_number(raw_meta)
+                # Ler meta da coluna O
+                meta_val = _to_number(df.iloc[row_index, 14])
                 meta_percentual = meta_val / 100 if meta_val else 0
                 
-                # Obter dados do mês
-                data_row = df.iloc[row_index + 1, 1:].dropna().tolist()
-                semanas = []
-                for i in range(0, len(data_row), 3):
-                    try:
-                        periodo = data_row[i]
-                        total = _to_number(data_row[i + 1])
-                        cumprido = _to_number(data_row[i + 2])
-                        percentual = round(cumprido / total, 4) if total else 0
-                        semanas.append({
-                            "periodo": periodo,
-                            "total": total,
-                            "cumprido": cumprido,
-                            "percentual": percentual
-                        })
-                    except Exception:
-                        break
+                # Ler dados do mês das colunas O, P
+                total_mes_total = _to_number(df.iloc[row_index + 1, 14])
+                total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])
                 
-                if semanas:
-                    total_mes = semanas[-1]
-                    # Verificar se atingiu a meta (lógica invertida para Churn)
-                    if "Churn" in metrica:
-                        if total_mes["percentual"] <= meta_percentual:
-                            metrics_above_target += 1
-                        else:
-                            metrics_below_target += 1
+                if total_mes_total > 0:
+                    percentual = total_mes_cumprido / total_mes_total
+                else:
+                    percentual = 0
+                
+                # Verificar se atingiu a meta
+                if "Churn" in metrica:
+                    if percentual <= meta_percentual:
+                        metrics_above_target += 1
                     else:
-                        if total_mes["percentual"] >= meta_percentual:
-                            metrics_above_target += 1
-                        else:
-                            metrics_below_target += 1
-                            
+                        metrics_below_target += 1
+                else:
+                    if percentual >= meta_percentual:
+                        metrics_above_target += 1
+                    else:
+                        metrics_below_target += 1
+                        
             except Exception:
                 continue
 
