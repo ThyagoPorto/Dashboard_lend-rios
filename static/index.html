@@ -477,33 +477,68 @@
         // Função para buscar dados do dashboard
         async function fetchDashboardData() {
             try {
-                const [metricsResponse, summaryResponse, weeklyResponse] = await Promise.all([
+                const [metricsResponse, weeklyResponse] = await Promise.all([
                     fetch('/api/dashboard/metrics'),
-                    fetch('/api/dashboard/summary'),
                     fetch('/api/dashboard/weekly-data')
                 ]);
 
-                if (!metricsResponse.ok || !summaryResponse.ok || !weeklyResponse.ok) {
+                if (!metricsResponse.ok || !weeklyResponse.ok) {
                     throw new Error('Erro ao buscar dados');
                 }
 
                 const metricsData = await metricsResponse.json();
-                const summaryData = await summaryResponse.json();
                 const weeklyData = await weeklyResponse.json();
 
-                if (!metricsData.success || !summaryData.success || !weeklyData.success) {
+                if (!metricsData.success || !weeklyData.success) {
                     throw new Error('Erro nos dados recebidos');
                 }
 
+                // Calcular o summary localmente a partir dos dados das métricas
+                const summaryData = calculateSummary(metricsData.data);
+
                 return {
                     metrics: metricsData.data,
-                    summary: summaryData.data,
+                    summary: summaryData,
                     weekly: weeklyData.data
                 };
             } catch (error) {
                 console.error('Erro ao buscar dados:', error);
                 throw error;
             }
+        }
+
+        // Função para calcular o summary localmente
+        function calculateSummary(metricsData) {
+            let metricsAboveTarget = 0;
+            let metricsBelowTarget = 0;
+            
+            metricsData.forEach(metric => {
+                if (metric.metrica.includes('Churn')) {
+                    // Para Churn, queremos valores BAIXOS (<= meta)
+                    if (metric.total_mes.percentual <= metric.meta_percentual) {
+                        metricsAboveTarget++;
+                    } else {
+                        metricsBelowTarget++;
+                    }
+                } else {
+                    // Para outras métricas, queremos valores ALTOS (>= meta)
+                    if (metric.total_mes.percentual >= metric.meta_percentual) {
+                        metricsAboveTarget++;
+                    } else {
+                        metricsBelowTarget++;
+                    }
+                }
+            });
+            
+            const totalMetrics = metricsData.length;
+            const performancePercentage = (metricsAboveTarget / totalMetrics) * 100;
+            
+            return {
+                total_metrics: totalMetrics,
+                metrics_above_target: metricsAboveTarget,
+                metrics_below_target: metricsBelowTarget,
+                performance_percentage: performancePercentage
+            };
         }
 
         // Função para renderizar o resumo
