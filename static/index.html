@@ -60,7 +60,7 @@
         }
 
         .header h1 img {
-            height: 50px; /* Ajuste conforme necessário para o tamanho do troféu */
+            height: 50px;
             width: auto;
         }
 
@@ -197,6 +197,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .metric-title {
@@ -377,6 +379,14 @@
             flex-wrap: wrap;
         }
 
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            color: #a0a0a0;
+            font-size: 1.1rem;
+            grid-column: 1 / -1;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2.2rem;
@@ -393,6 +403,11 @@
             .controls {
                 flex-direction: column;
                 align-items: center;
+            }
+
+            .metric-header {
+                flex-direction: column;
+                align-items: flex-start;
             }
         }
     </style>
@@ -472,7 +487,7 @@
         let currentData = null;
         let currentWeeklyData = null;
         let currentView = 'overview';
-        let currentWeeklyMetricFilter = 'all'; // Novo filtro para métricas semanais
+        let currentWeeklyMetricFilter = 'all';
 
         // Função para buscar dados do dashboard
         async function fetchDashboardData() {
@@ -514,14 +529,12 @@
             
             metricsData.forEach(metric => {
                 if (metric.metrica.includes('Churn')) {
-                    // Para Churn, queremos valores BAIXOS (<= meta)
                     if (metric.total_mes.percentual <= metric.meta_percentual) {
                         metricsAboveTarget++;
                     } else {
                         metricsBelowTarget++;
                     }
                 } else {
-                    // Para outras métricas, queremos valores ALTOS (>= meta)
                     if (metric.total_mes.percentual >= metric.meta_percentual) {
                         metricsAboveTarget++;
                     } else {
@@ -587,9 +600,13 @@
             `;
         }
 
-        // Função para criar card semanal
+        // Função para criar card semanal (COM VALIDAÇÃO PARA EVITAR DUPLICAÇÃO)
         function createWeeklyCard(metric, semana) {
-            if (semana.periodo === 'Total Mês') return '';
+            // VALIDAÇÃO CRÍTICA: Não criar card para semanas inválidas, vazias ou duplicadas
+            if (!semana.periodo || semana.periodo === 'Total Mês' || semana.total === 0 || 
+                typeof semana.total !== 'number' || isNaN(semana.total)) {
+                return '';
+            }
 
             const statusClass = 
                 metric.metrica.includes('Churn') 
@@ -663,7 +680,7 @@
             });
         }
 
-        // Função para criar gráfico de tendências (sem RNR)
+        // Função para criar gráfico de tendências
         function createTrendsChart(weeklyData) {
             const ctx = document.getElementById('trends-chart').getContext('2d');
             
@@ -749,20 +766,31 @@
             }, 100);
         }
 
-        // Função para renderizar métricas semanais com filtro
+        // Função para renderizar métricas semanais com filtro (CORRIGIDA)
         function renderWeeklyMetrics(metricsData, filterMetric = 'all') {
             const container = document.getElementById('weekly-metrics-container');
             let html = '';
+            let hasValidData = false;
             
             const filteredMetrics = filterMetric === 'all' 
                 ? metricsData 
                 : metricsData.filter(metric => metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-') === filterMetric);
 
+            // Processar cada métrica e semana
             filteredMetrics.forEach(metric => {
                 metric.semanas.forEach(semana => {
-                    html += createWeeklyCard(metric, semana);
+                    const cardHtml = createWeeklyCard(metric, semana);
+                    if (cardHtml) {
+                        html += cardHtml;
+                        hasValidData = true;
+                    }
                 });
             });
+            
+            // Se não houver dados válidos, mostrar mensagem
+            if (!hasValidData) {
+                html = '<div class="no-data-message">⏳ Aguardando dados das semanas...<br><small>Preencha as semanas restantes na planilha Excel</small></div>';
+            }
             
             container.innerHTML = html;
         }
@@ -840,6 +868,7 @@
                 document.getElementById('dashboard-content').style.display = 'block';
                 
             } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('error').style.display = 'block';
             }
