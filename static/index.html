@@ -598,7 +598,7 @@
                             <div class="progress-fill" style="width: ${metric.total_mes.percentual * 100}%; background: ${metric.cor};"></div>
                         </div>
                         <div class="progress-text">
-                            ${(metric.total_mes.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
+                            ${(metric.total_mes.percentual * 100).toFixed(1)}% da meta (${metric.meta_objetivo})
                         </div>
                     </div>
                     
@@ -694,7 +694,7 @@
                             <div class="progress-fill" style="width: ${semana.percentual * 100}%; background: ${metric.cor};"></div>
                         </div>
                         <div class="progress-text">
-                            ${(semana.percentual * 100).toFixed(1)}% ${metric.metrica.includes('Churn') ? '(meta: ' + metric.meta_objetivo + ')' : 'da meta (' + metric.meta_objetivo + ')'}
+                            ${(semana.percentual * 100).toFixed(1)}% da meta (${metric.meta_objetivo})
                         </div>
                     </div>
                 </div>
@@ -714,6 +714,7 @@
                             label: 'CSAT (%)',
                             data: weeklyData.csat,
                             borderColor: '#00D9FF',
+                            backgroundColor: 'rg
                             backgroundColor: 'rgba(0, 217, 255, 0.1)',
                             tension: 0.4,
                             fill: true
