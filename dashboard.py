@@ -59,34 +59,49 @@ def get_metrics():
             else:
                 total_mes_percentual = 0
 
-            # CORREÇÃO: Ler nomes das semanas da linha de cabeçalho (linha 0)
+            # CORREÇÃO: Buscar semanas de forma mais flexível
             semanas = []
             # Colunas das semanas: B, E, H, K (índices 1, 4, 7, 10)
             colunas_semanas = [1, 4, 7, 10]
             
             for col_index in colunas_semanas:
                 try:
-                    # CORREÇÃO: Pegar o nome da semana do cabeçalho (linha 0) em vez da linha da métrica
-                    periodo = df.iloc[0, col_index]  # Linha 0 = cabeçalho com nomes das semanas
-                    if pd.isna(periodo) or periodo == "" or "Total" in str(periodo):
-                        continue
-                        
+                    # Tentar pegar o nome da semana de várias fontes possíveis
+                    periodo = None
+                    
+                    # Primeiro: tentar linha do cabeçalho (linha 0)
+                    if not pd.isna(df.iloc[0, col_index]) and df.iloc[0, col_index] != "":
+                        periodo = df.iloc[0, col_index]
+                    # Segundo: tentar linha da métrica (onde estava antes)
+                    elif not pd.isna(df.iloc[row_index, col_index]) and df.iloc[row_index, col_index] != "":
+                        periodo = df.iloc[row_index, col_index]
+                    # Terceiro: criar nome genérico baseado na coluna
+                    else:
+                        # Mapear colunas para nomes de semanas
+                        semana_nomes = {
+                            1: "Semana 1",
+                            4: "Semana 2", 
+                            7: "Semana 3",
+                            10: "Semana 4"
+                        }
+                        periodo = semana_nomes.get(col_index, f"Semana {col_index}")
+                    
                     total = _to_number(df.iloc[row_index + 1, col_index])
                     cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
                     
-                    if total > 0:
-                        percentual = cumprido / total
-                    else:
-                        percentual = 0
+                    # Só criar card se tiver dados válidos
+                    if total > 0 and cumprido >= 0:  # Permite cumprido = 0
+                        percentual = cumprido / total if total > 0 else 0
                         
-                    semanas.append({
-                        "periodo": str(periodo),
-                        "total": total,
-                        "cumprido": cumprido,
-                        "percentual": percentual
-                    })
+                        semanas.append({
+                            "periodo": str(periodo),
+                            "total": total,
+                            "cumprido": cumprido,
+                            "percentual": percentual
+                        })
+                        
                 except Exception as e:
-                    print(f"Erro ao processar semana: {e}")
+                    print(f"Erro ao processar semana na coluna {col_index}: {e}")
                     continue
 
             # Determinar status baseado no percentual e meta
@@ -158,10 +173,16 @@ def get_weekly_data():
             
             for col_index in colunas_semanas:
                 try:
-                    # CORREÇÃO: Pegar o nome da semana do cabeçalho (linha 0)
-                    periodo = df.iloc[0, col_index]  # Linha 0 = cabeçalho
-                    if pd.isna(periodo) or periodo == "" or "Total" in str(periodo):
-                        continue
+                    # Buscar nome da semana de forma flexível
+                    periodo = None
+                    
+                    if not pd.isna(df.iloc[0, col_index]) and df.iloc[0, col_index] != "":
+                        periodo = df.iloc[0, col_index]
+                    elif not pd.isna(df.iloc[row_index, col_index]) and df.iloc[row_index, col_index] != "":
+                        periodo = df.iloc[row_index, col_index]
+                    else:
+                        semana_nomes = {1: "Semana 1", 4: "Semana 2", 7: "Semana 3", 10: "Semana 4"}
+                        periodo = semana_nomes.get(col_index, f"Semana {col_index}")
                         
                     total = _to_number(df.iloc[row_index + 1, col_index])
                     cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
@@ -174,7 +195,7 @@ def get_weekly_data():
                     valores.append(percentual)
                     
                     # Coletar labels das semanas apenas uma vez
-                    if not semanas_coletadas:
+                    if not semanas_coletadas and periodo:
                         weekly_data["semanas"].append(str(periodo))
                         
                 except Exception:
