@@ -41,8 +41,13 @@ def get_metrics():
             "Cancelamento - Churn": 1
         }
 
-        # LINHA DOS NOMES DAS SEMANAS (linha 1 conforme informado)
-        linha_semanas = 1
+        # PERÍODOS DAS SEMANAS FIXOS (conforme informado)
+        periodos_semanas = [
+            "01 a 05",
+            "08 a 12", 
+            "15 a 19",
+            "22 a 30"
+        ]
 
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
@@ -62,47 +67,36 @@ def get_metrics():
             else:
                 total_mes_percentual = 0
 
-            # BUSCAR DADOS DAS SEMANAS - COLUNAS AGRUPADAS DE 3 EM 3
+            # BUSCAR DADOS DAS SEMANAS - USANDO PERÍODOS FIXOS
             semanas = []
-            # Grupos de colunas: [B,C,D], [E,F,G], [H,I,J], [K,L,M]
-            grupos_colunas = [
-                (1, 2, 3),   # B, C, D - Semana 01 a 05
-                (4, 5, 6),   # E, F, G - Semana 08 a 12  
-                (7, 8, 9),   # H, I, J - Semana 15 a 19
-                (10, 11, 12) # K, L, M - Semana 22 a 30
+            # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
+            colunas_semanas = [
+                (1, 2),   # B, C - Semana 01 a 05 (Total, Cumprido)
+                (4, 5),   # E, F - Semana 08 a 12 (Total, Cumprido)
+                (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
+                (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
             ]
             
-            for grupo in grupos_colunas:
+            for i, (col_total, col_cumprido) in enumerate(colunas_semanas):
                 try:
-                    # Coluna do período (B, E, H, K) - primeira coluna de cada grupo
-                    col_periodo = grupo[0]
-                    periodo = df.iloc[linha_semanas, col_periodo]
+                    periodo = periodos_semanas[i]  # Usar período fixo
                     
-                    # Verificar se o período é válido
-                    if pd.isna(periodo) or periodo == "":
-                        continue
-                    
-                    # Coluna do total (C, F, I, L) - segunda coluna de cada grupo
-                    col_total = grupo[1]
                     total = _to_number(df.iloc[row_index + 1, col_total])
-                    
-                    # Coluna do cumprido (D, G, J, M) - terceira coluna de cada grupo
-                    col_cumprido = grupo[2]
                     cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
                     
                     # Só criar card se tiver dados válidos
-                    if total > 0 or cumprido > 0:
+                    if total > 0 or cumprido >= 0:
                         percentual = cumprido / total if total > 0 else 0
                         
                         semanas.append({
-                            "periodo": str(periodo),
+                            "periodo": periodo,
                             "total": total,
                             "cumprido": cumprido,
                             "percentual": percentual
                         })
                         
                 except Exception as e:
-                    print(f"Erro ao processar semana no grupo {grupo}: {e}")
+                    print(f"Erro ao processar semana {periodos_semanas[i]}: {e}")
                     continue
 
             # Determinar status baseado no percentual e meta
@@ -162,18 +156,22 @@ def get_weekly_data():
         df = pd.read_excel(xls, sheet_name="Métricas")
         metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
-        # LINHA DOS NOMES DAS SEMANAS (linha 1 conforme informado)
-        linha_semanas = 1
+        # PERÍODOS DAS SEMANAS FIXOS
+        periodos_semanas = [
+            "01 a 05",
+            "08 a 12", 
+            "15 a 19",
+            "22 a 30"
+        ]
 
-        weekly_data = {"semanas": []}
-        semanas_coletadas = False
+        weekly_data = {"semanas": periodos_semanas}  # Usar períodos fixos
 
-        # Grupos de colunas: [B,C,D], [E,F,G], [H,I,J], [K,L,M]
-        grupos_colunas = [
-            (1, 2, 3),   # B, C, D - Semana 01 a 05
-            (4, 5, 6),   # E, F, G - Semana 08 a 12  
-            (7, 8, 9),   # H, I, J - Semana 15 a 19
-            (10, 11, 12) # K, L, M - Semana 22 a 30
+        # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
+        colunas_semanas = [
+            (1, 2),   # B, C - Semana 01 a 05
+            (4, 5),   # E, F - Semana 08 a 12
+            (7, 8),   # H, I - Semana 15 a 19
+            (10, 11)  # K, L - Semana 22 a 30
         ]
 
         for metrica in metricas:
@@ -182,21 +180,9 @@ def get_weekly_data():
             # Coletar dados das semanas
             valores = []
             
-            for grupo in grupos_colunas:
+            for col_total, col_cumprido in colunas_semanas:
                 try:
-                    # Coluna do período (B, E, H, K)
-                    col_periodo = grupo[0]
-                    periodo = df.iloc[linha_semanas, col_periodo]
-                    
-                    if pd.isna(periodo) or periodo == "":
-                        continue
-                        
-                    # Coluna do total (C, F, I, L)
-                    col_total = grupo[1]
                     total = _to_number(df.iloc[row_index + 1, col_total])
-                    
-                    # Coluna do cumprido (D, G, J, M)
-                    col_cumprido = grupo[2]
                     cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
                     
                     if total > 0:
@@ -205,15 +191,10 @@ def get_weekly_data():
                         percentual = 0
                         
                     valores.append(percentual)
-                    
-                    # Coletar labels das semanas apenas uma vez
-                    if not semanas_coletadas:
-                        weekly_data["semanas"].append(str(periodo))
                         
                 except Exception:
                     continue
             
-            semanas_coletadas = True
             weekly_data[metrica.lower().replace(" ", "_")] = valores
 
         return jsonify({"success": True, "data": weekly_data})
