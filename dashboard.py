@@ -41,18 +41,8 @@ def get_metrics():
             "Cancelamento - Churn": 1
         }
 
-        # ENCONTRAR A LINHA CORRETA COM OS NOMES DAS SEMANAS
-        # Procura a linha que contém os períodos das semanas (ex: "04 á 08", "11 à 15")
-        linha_semanas = None
-        for i in range(len(df)):
-            # Verifica se a linha contém padrões de datas/semanas
-            if any('á' in str(cell) or 'à' in str(cell) or '/' in str(cell) for cell in df.iloc[i]):
-                linha_semanas = i
-                break
-        
-        # Se não encontrou, usa a linha 0 como padrão
-        if linha_semanas is None:
-            linha_semanas = 0
+        # LINHA DOS NOMES DAS SEMANAS (linha 1 conforme informado)
+        linha_semanas = 1
 
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
@@ -72,37 +62,47 @@ def get_metrics():
             else:
                 total_mes_percentual = 0
 
-            # BUSCAR NOMES DAS SEMANAS DA LINHA CORRETA
+            # BUSCAR DADOS DAS SEMANAS - COLUNAS AGRUPADAS DE 3 EM 3
             semanas = []
-            colunas_semanas = [1, 4, 7, 10]  # Colunas B, E, H, K
+            # Grupos de colunas: [B,C,D], [E,F,G], [H,I,J], [K,L,M]
+            grupos_colunas = [
+                (1, 2, 3),   # B, C, D - Semana 01 a 05
+                (4, 5, 6),   # E, F, G - Semana 08 a 12  
+                (7, 8, 9),   # H, I, J - Semana 15 a 19
+                (10, 11, 12) # K, L, M - Semana 22 a 30
+            ]
             
-            for col_index in colunas_semanas:
+            for grupo in grupos_colunas:
                 try:
-                    # Buscar o nome da semana da linha correta
-                    periodo = df.iloc[linha_semanas, col_index]
+                    # Coluna do período (B, E, H, K) - primeira coluna de cada grupo
+                    col_periodo = grupo[0]
+                    periodo = df.iloc[linha_semanas, col_periodo]
                     
-                    # Se estiver vazio ou for um número, pular
-                    if pd.isna(periodo) or periodo == "" or str(periodo).isdigit():
+                    # Verificar se o período é válido
+                    if pd.isna(periodo) or periodo == "":
                         continue
                     
-                    total = _to_number(df.iloc[row_index + 1, col_index])
-                    cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
+                    # Coluna do total (C, F, I, L) - segunda coluna de cada grupo
+                    col_total = grupo[1]
+                    total = _to_number(df.iloc[row_index + 1, col_total])
+                    
+                    # Coluna do cumprido (D, G, J, M) - terceira coluna de cada grupo
+                    col_cumprido = grupo[2]
+                    cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
                     
                     # Só criar card se tiver dados válidos
-                    if total > 0 and cumprido >= 0:
+                    if total > 0 or cumprido > 0:
                         percentual = cumprido / total if total > 0 else 0
                         
-                        # Verificar se o período parece ser uma data/semana
-                        if any(char in str(periodo) for char in ['á', 'à', '/', '-']):
-                            semanas.append({
-                                "periodo": str(periodo),
-                                "total": total,
-                                "cumprido": cumprido,
-                                "percentual": percentual
-                            })
+                        semanas.append({
+                            "periodo": str(periodo),
+                            "total": total,
+                            "cumprido": cumprido,
+                            "percentual": percentual
+                        })
                         
                 except Exception as e:
-                    print(f"Erro ao processar semana na coluna {col_index}: {e}")
+                    print(f"Erro ao processar semana no grupo {grupo}: {e}")
                     continue
 
             # Determinar status baseado no percentual e meta
@@ -162,35 +162,42 @@ def get_weekly_data():
         df = pd.read_excel(xls, sheet_name="Métricas")
         metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
-        # ENCONTRAR A LINHA CORRETA COM OS NOMES DAS SEMANAS
-        linha_semanas = None
-        for i in range(len(df)):
-            if any('á' in str(cell) or 'à' in str(cell) or '/' in str(cell) for cell in df.iloc[i]):
-                linha_semanas = i
-                break
-        if linha_semanas is None:
-            linha_semanas = 0
+        # LINHA DOS NOMES DAS SEMANAS (linha 1 conforme informado)
+        linha_semanas = 1
 
         weekly_data = {"semanas": []}
         semanas_coletadas = False
+
+        # Grupos de colunas: [B,C,D], [E,F,G], [H,I,J], [K,L,M]
+        grupos_colunas = [
+            (1, 2, 3),   # B, C, D - Semana 01 a 05
+            (4, 5, 6),   # E, F, G - Semana 08 a 12  
+            (7, 8, 9),   # H, I, J - Semana 15 a 19
+            (10, 11, 12) # K, L, M - Semana 22 a 30
+        ]
 
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
             
             # Coletar dados das semanas
             valores = []
-            colunas_semanas = [1, 4, 7, 10]  # Colunas B, E, H, K
             
-            for col_index in colunas_semanas:
+            for grupo in grupos_colunas:
                 try:
-                    # Buscar nome da semana da linha correta
-                    periodo = df.iloc[linha_semanas, col_index]
+                    # Coluna do período (B, E, H, K)
+                    col_periodo = grupo[0]
+                    periodo = df.iloc[linha_semanas, col_periodo]
                     
-                    if pd.isna(periodo) or periodo == "" or str(periodo).isdigit():
+                    if pd.isna(periodo) or periodo == "":
                         continue
                         
-                    total = _to_number(df.iloc[row_index + 1, col_index])
-                    cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
+                    # Coluna do total (C, F, I, L)
+                    col_total = grupo[1]
+                    total = _to_number(df.iloc[row_index + 1, col_total])
+                    
+                    # Coluna do cumprido (D, G, J, M)
+                    col_cumprido = grupo[2]
+                    cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
                     
                     if total > 0:
                         percentual = (cumprido / total) * 100
@@ -200,7 +207,7 @@ def get_weekly_data():
                     valores.append(percentual)
                     
                     # Coletar labels das semanas apenas uma vez
-                    if not semanas_coletadas and any(char in str(periodo) for char in ['á', 'à', '/', '-']):
+                    if not semanas_coletadas:
                         weekly_data["semanas"].append(str(periodo))
                         
                 except Exception:
