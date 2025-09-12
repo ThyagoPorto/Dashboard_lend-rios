@@ -41,6 +41,19 @@ def get_metrics():
             "Cancelamento - Churn": 1
         }
 
+        # ENCONTRAR A LINHA CORRETA COM OS NOMES DAS SEMANAS
+        # Procura a linha que contém os períodos das semanas (ex: "04 á 08", "11 à 15")
+        linha_semanas = None
+        for i in range(len(df)):
+            # Verifica se a linha contém padrões de datas/semanas
+            if any('á' in str(cell) or 'à' in str(cell) or '/' in str(cell) for cell in df.iloc[i]):
+                linha_semanas = i
+                break
+        
+        # Se não encontrou, usa a linha 0 como padrão
+        if linha_semanas is None:
+            linha_semanas = 0
+
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
 
@@ -59,46 +72,34 @@ def get_metrics():
             else:
                 total_mes_percentual = 0
 
-            # CORREÇÃO: Buscar semanas de forma mais flexível
+            # BUSCAR NOMES DAS SEMANAS DA LINHA CORRETA
             semanas = []
-            # Colunas das semanas: B, E, H, K (índices 1, 4, 7, 10)
-            colunas_semanas = [1, 4, 7, 10]
+            colunas_semanas = [1, 4, 7, 10]  # Colunas B, E, H, K
             
             for col_index in colunas_semanas:
                 try:
-                    # Tentar pegar o nome da semana de várias fontes possíveis
-                    periodo = None
+                    # Buscar o nome da semana da linha correta
+                    periodo = df.iloc[linha_semanas, col_index]
                     
-                    # Primeiro: tentar linha do cabeçalho (linha 0)
-                    if not pd.isna(df.iloc[0, col_index]) and df.iloc[0, col_index] != "":
-                        periodo = df.iloc[0, col_index]
-                    # Segundo: tentar linha da métrica (onde estava antes)
-                    elif not pd.isna(df.iloc[row_index, col_index]) and df.iloc[row_index, col_index] != "":
-                        periodo = df.iloc[row_index, col_index]
-                    # Terceiro: criar nome genérico baseado na coluna
-                    else:
-                        # Mapear colunas para nomes de semanas
-                        semana_nomes = {
-                            1: "Semana 1",
-                            4: "Semana 2", 
-                            7: "Semana 3",
-                            10: "Semana 4"
-                        }
-                        periodo = semana_nomes.get(col_index, f"Semana {col_index}")
+                    # Se estiver vazio ou for um número, pular
+                    if pd.isna(periodo) or periodo == "" or str(periodo).isdigit():
+                        continue
                     
                     total = _to_number(df.iloc[row_index + 1, col_index])
                     cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
                     
                     # Só criar card se tiver dados válidos
-                    if total > 0 and cumprido >= 0:  # Permite cumprido = 0
+                    if total > 0 and cumprido >= 0:
                         percentual = cumprido / total if total > 0 else 0
                         
-                        semanas.append({
-                            "periodo": str(periodo),
-                            "total": total,
-                            "cumprido": cumprido,
-                            "percentual": percentual
-                        })
+                        # Verificar se o período parece ser uma data/semana
+                        if any(char in str(periodo) for char in ['á', 'à', '/', '-']):
+                            semanas.append({
+                                "periodo": str(periodo),
+                                "total": total,
+                                "cumprido": cumprido,
+                                "percentual": percentual
+                            })
                         
                 except Exception as e:
                     print(f"Erro ao processar semana na coluna {col_index}: {e}")
@@ -161,6 +162,15 @@ def get_weekly_data():
         df = pd.read_excel(xls, sheet_name="Métricas")
         metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
+        # ENCONTRAR A LINHA CORRETA COM OS NOMES DAS SEMANAS
+        linha_semanas = None
+        for i in range(len(df)):
+            if any('á' in str(cell) or 'à' in str(cell) or '/' in str(cell) for cell in df.iloc[i]):
+                linha_semanas = i
+                break
+        if linha_semanas is None:
+            linha_semanas = 0
+
         weekly_data = {"semanas": []}
         semanas_coletadas = False
 
@@ -173,16 +183,11 @@ def get_weekly_data():
             
             for col_index in colunas_semanas:
                 try:
-                    # Buscar nome da semana de forma flexível
-                    periodo = None
+                    # Buscar nome da semana da linha correta
+                    periodo = df.iloc[linha_semanas, col_index]
                     
-                    if not pd.isna(df.iloc[0, col_index]) and df.iloc[0, col_index] != "":
-                        periodo = df.iloc[0, col_index]
-                    elif not pd.isna(df.iloc[row_index, col_index]) and df.iloc[row_index, col_index] != "":
-                        periodo = df.iloc[row_index, col_index]
-                    else:
-                        semana_nomes = {1: "Semana 1", 4: "Semana 2", 7: "Semana 3", 10: "Semana 4"}
-                        periodo = semana_nomes.get(col_index, f"Semana {col_index}")
+                    if pd.isna(periodo) or periodo == "" or str(periodo).isdigit():
+                        continue
                         
                     total = _to_number(df.iloc[row_index + 1, col_index])
                     cumprido = _to_number(df.iloc[row_index + 1, col_index + 1])
@@ -195,7 +200,7 @@ def get_weekly_data():
                     valores.append(percentual)
                     
                     # Coletar labels das semanas apenas uma vez
-                    if not semanas_coletadas and periodo:
+                    if not semanas_coletadas and any(char in str(periodo) for char in ['á', 'à', '/', '-']):
                         weekly_data["semanas"].append(str(periodo))
                         
                 except Exception:
