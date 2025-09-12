@@ -59,14 +59,16 @@ def get_metrics():
             else:
                 total_mes_percentual = 0
 
-            # Ler dados semanais das colunas B, E, H, K
+            # CORREÇÃO: Ler nomes das semanas da linha de cabeçalho (linha 0)
             semanas = []
-            colunas_semanas = [1, 4, 7, 10]  # Colunas B, E, H, K
+            # Colunas das semanas: B, E, H, K (índices 1, 4, 7, 10)
+            colunas_semanas = [1, 4, 7, 10]
             
             for col_index in colunas_semanas:
                 try:
-                    periodo = df.iloc[row_index, col_index]
-                    if pd.isna(periodo) or periodo == "":
+                    # CORREÇÃO: Pegar o nome da semana do cabeçalho (linha 0) em vez da linha da métrica
+                    periodo = df.iloc[0, col_index]  # Linha 0 = cabeçalho com nomes das semanas
+                    if pd.isna(periodo) or periodo == "" or "Total" in str(periodo):
                         continue
                         
                     total = _to_number(df.iloc[row_index + 1, col_index])
@@ -95,7 +97,7 @@ def get_metrics():
                 "cor": cores.get(metrica, "#000"),
                 "meta_objetivo": meta_objetivo,
                 "meta_percentual": meta_percentual,
-                "meta_valor": meta_val,  # Adicionando o valor numérico da meta
+                "meta_valor": meta_val,
                 "semanas": semanas,
                 "total_mes": {
                     "total": total_mes_total,
@@ -156,8 +158,9 @@ def get_weekly_data():
             
             for col_index in colunas_semanas:
                 try:
-                    periodo = df.iloc[row_index, col_index]
-                    if pd.isna(periodo) or periodo == "":
+                    # CORREÇÃO: Pegar o nome da semana do cabeçalho (linha 0)
+                    periodo = df.iloc[0, col_index]  # Linha 0 = cabeçalho
+                    if pd.isna(periodo) or periodo == "" or "Total" in str(periodo):
                         continue
                         
                     total = _to_number(df.iloc[row_index + 1, col_index])
