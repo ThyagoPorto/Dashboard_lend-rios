@@ -654,28 +654,21 @@
             });
         }
 
-        // Função para criar card semanal (ANÁLISE SEMANAL)
+        // Função para criar card semanal (ANÁLISE SEMANAL) - CORRIGIDA
         function createWeeklyCard(metric, semana) {
             if (!semana.periodo || semana.periodo === 'Total Mês' || semana.total === 0 || 
                 typeof semana.total !== 'number' || isNaN(semana.total)) {
                 return '';
             }
 
-            const statusClass = 
-                metric.metrica.includes('Churn') 
-                    ? (semana.percentual <= metric.meta_percentual ? 'status-excelente' : 'status-atencao')
-                    : (semana.percentual >= metric.meta_percentual ? 'status-excelente' : 'status-atencao');
-            
-            const status = 
-                metric.metrica.includes('Churn') 
-                    ? (semana.percentual <= metric.meta_percentual ? 'Excelente' : 'Atenção')
-                    : (semana.percentual >= metric.meta_percentual ? 'Excelente' : 'Atenção');
+            // Usar o status calculado pelo backend para cada semana
+            const statusClass = `status-${semana.status.toLowerCase()}`;
             
             return `
                 <div class="metric-card" style="--metric-color: ${metric.cor}">
                     <div class="metric-header">
                         <div class="metric-title">${metric.metrica} - ${semana.periodo}</div>
-                        <div class="metric-status ${statusClass}">${status}</div>
+                        <div class="metric-status ${statusClass}">${semana.status}</div>
                     </div>
                     
                     <div class="metric-values">
@@ -823,7 +816,7 @@
 
             metricsData.forEach(metric => {
                 const metricId = metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-');
-                buttonsHtml += `<button class="filter-btn ${currentWeeklyMetricFilter === metricId ? 'active' : ''}" onclick="filterWeeklyMetrics('${metricId}')">${metric.metrica}</button>`;
+                buttonsHtml += `<button class="filter-btn ${currentWeeklyMetricFilter === metricId ? 'active' : ''}" onclick="filterWeeklyMetrics('${metricId')">${metric.metrica}</button>`;
             });
             container.innerHTML = buttonsHtml;
         }
@@ -862,7 +855,7 @@
             }
         }
 
-        // Função principal para carregar o dashboard
+                // Função principal para carregar o dashboard
         async function loadDashboard() {
             try {
                 const data = await fetchDashboardData();
@@ -895,4 +888,3 @@
     </script>
 </body>
 </html>
-
