@@ -816,7 +816,7 @@
 
             metricsData.forEach(metric => {
                 const metricId = metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-');
-                buttonsHtml += `<button class="filter-btn ${currentWeeklyMetricFilter === metricId ? 'active' : ''}" onclick="filterWeeklyMetrics('${metricId')">${metric.metrica}</button>`;
+                buttonsHtml += `<button class="filter-btn ${currentWeeklyMetricFilter === metricId ? 'active' : ''}" onclick="filterWeeklyMetrics('${metricId}')">${metric.metrica}</button>`;
             });
             container.innerHTML = buttonsHtml;
         }
@@ -888,3 +888,4 @@
     </script>
 </body>
 </html>
+
