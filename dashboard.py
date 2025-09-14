@@ -15,6 +15,44 @@ def load_excel():
         return None
 
 
+def _to_number(val):
+    """Converte qualquer valor em número."""
+    if pd.isna(val):
+        return 0
+    if isinstance(val, (int, float)):
+        return float(val)
+    try:
+        # Remove porcentagens, vírgulas, etc.
+        cleaned = str(val).replace("%", "").replace(",", ".").strip()
+        return float(cleaned)
+    except:
+        return 0
+
+
+def _get_status(percentual, meta, metrica=""):
+    """
+    Determina o status baseado no percentual e meta.
+    Para Churn: valores BAIXOS são bons (≤ meta)
+    Para outras métricas: valores ALTOS são bons (≥ meta)
+    """
+    if "Churn" in metrica:
+        # Lógica INVERTIDA para Churn - quanto MENOR, melhor
+        if percentual <= meta:
+            return "Excelente"
+        elif percentual <= meta * 1.1:  # Até 10% acima da meta ainda é Atenção
+            return "Atenção"
+        else:
+            return "Crítico"
+    else:
+        # Lógica NORMAL para outras métricas - quanto MAIOR, melhor
+        if percentual >= meta:
+            return "Excelente"
+        elif percentual >= meta * 0.9:  # Pelo menos 90% da meta é Atenção
+            return "Atenção"
+        else:
+            return "Crítico"
+
+
 @dashboard_bp.route("/metrics", methods=["GET"])
 def get_metrics():
     try:
@@ -88,19 +126,23 @@ def get_metrics():
                     if total > 0 or cumprido >= 0:
                         percentual = cumprido / total if total > 0 else 0
                         
+                        # Determinar status para a semana (passando o nome da métrica)
+                        status_semana = _get_status(percentual, meta_percentual, metrica)
+                        
                         semanas.append({
                             "periodo": periodo,
                             "total": total,
                             "cumprido": cumprido,
-                            "percentual": percentual
+                            "percentual": percentual,
+                            "status": status_semana  # Adicionar status para cada semana
                         })
                         
                 except Exception as e:
                     print(f"Erro ao processar semana {periodos_semanas[i]}: {e}")
                     continue
 
-            # Determinar status baseado no percentual e meta
-            status_final = _get_status(total_mes_percentual, meta_percentual)
+            # Determinar status baseado no percentual e meta (passando o nome da métrica)
+            status_final = _get_status(total_mes_percentual, meta_percentual, metrica)
 
             metrics_data.append({
                 "metrica": metrica,
@@ -121,29 +163,6 @@ def get_metrics():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
-
-def _to_number(val):
-    """Converte qualquer valor em número."""
-    if pd.isna(val):
-        return 0
-    if isinstance(val, (int, float)):
-        return float(val)
-    try:
-        # Remove porcentagens, vírgulas, etc.
-        cleaned = str(val).replace("%", "").replace(",", ".").strip()
-        return float(cleaned)
-    except:
-        return 0
-
-
-def _get_status(percentual, meta):
-    if percentual >= meta:
-        return "Excelente"
-    elif percentual >= meta * 0.9:
-        return "Atenção"
-    else:
-        return "Crítico"
 
 
 @dashboard_bp.route("/weekly-data", methods=["GET"])
@@ -242,7 +261,7 @@ def get_summary():
                 else:
                     percentual = 0
                 
-                # Verificar se atingiu a meta
+                # Verificar se atingiu a meta (lógica invertida para Churn)
                 if "Churn" in metrica:
                     if percentual <= meta_percentual:
                         metrics_above_target += 1
