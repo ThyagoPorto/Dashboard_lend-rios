@@ -184,64 +184,39 @@ def get_weekly_data():
 
         weekly_data = {"semanas": periodos_semanas}
 
-        # METAS FIXAS DO MÊS (conforme informado)
-        metas_fixas = {
-            "CSAT": 95,
-            "SLA dos DS": 82,
-            "Cobertura de Carteira": 100,
-            "Cancelamento - Churn": 1
+        # Mapeamento das colunas onde estão os PERCENTUAIS semanais
+        # Colunas D, G, J, M (índices 3, 6, 9, 12)
+        colunas_percentuais = [3, 6, 9, 12]
+
+        # Para cada métrica, extrair os percentuais das colunas corretas
+        metricas = {
+            "CSAT": 3,           # Linha 3
+            "SLA dos DS": 7,      # Linha 7  
+            "Cobertura de Carteira": 11,  # Linha 11
+            "Cancelamento - Churn": 15    # Linha 15
         }
 
-        # Encontrar as linhas de cada métrica
-        metric_rows = {}
-        for metrica in ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]:
-            try:
-                row_index = df[df.iloc[:, 0] == metrica].index[0]
-                metric_rows[metrica] = row_index + 1  # Linha dos dados
-            except:
-                metric_rows[metrica] = None
-
-        # Extrair dados de cada métrica e calcular percentual de atingimento
-        for metrica, data_row in metric_rows.items():
-            if data_row is None:
-                continue
-                
+        for metrica, linha in metricas.items():
             percentuais = []
-            meta_val = metas_fixas.get(metrica, 1)  # Meta da métrica
             
-            # Colunas para cada semana (B,C), (E,F), (H,I), (K,L) - (Total, Cumprido)
-            colunas_semanas = [
-                (1, 2),   # B, C - Semana 01 a 05 (Total, Cumprido)
-                (4, 5),   # E, F - Semana 08 a 12 (Total, Cumprido)
-                (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
-                (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
-            ]
-            
-            for col_total, col_cumprido in colunas_semanas:
+            for coluna in colunas_percentuais:
                 try:
-                    total = _to_number(df.iloc[data_row, col_total])
-                    cumprido = _to_number(df.iloc[data_row, col_cumprido])
+                    # Extrair o valor percentual diretamente da célula
+                    valor = _to_number(df.iloc[linha, coluna])
                     
-                    # Calcular percentual de atingimento da meta
-                    if total > 0:
-                        if "Churn" in metrica:
-                            # Para Churn: percentual = (1 - (cumprido/total)) * 100 / meta
-                            # Quanto menor o churn, melhor
-                            percentual_atingimento = ((1 - (cumprido/total)) * 100) / meta_val
-                        else:
-                            # Para outras métricas: percentual = (cumprido/total) * 100 / meta
-                            percentual_atingimento = ((cumprido/total) * 100) / meta_val
-                        
-                        # Garantir que não ultrapasse 100% para métricas normais
-                        if "Churn" not in metrica and percentual_atingimento > 100:
-                            percentual_atingimento = 100
+                    # Se for Churn, converter para percentual de atingimento
+                    if "Churn" in metrica:
+                        # Para Churn, valores menores são melhores
+                        # Se o valor for 0.0057 (0.57%), mostrar como 99.43% de atingimento
+                        percentual = (1 - valor) * 100
                     else:
-                        percentual_atingimento = 0
-                        
-                    percentuais.append(percentual_atingimento)
+                        # Para outras métricas, usar o valor diretamente
+                        percentual = valor * 100
+                    
+                    percentuais.append(percentual)
                         
                 except Exception as e:
-                    print(f"Erro em {metrica}, colunas {col_total},{col_cumprido}: {e}")
+                    print(f"Erro em {metrica}, coluna {coluna}: {e}")
                     percentuais.append(0)
             
             metric_key = metrica.lower().replace(" ", "_").replace("-", "_")
