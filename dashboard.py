@@ -184,6 +184,14 @@ def get_weekly_data():
 
         weekly_data = {"semanas": periodos_semanas}
 
+        # METAS FIXAS DO MÊS (conforme informado)
+        metas_fixas = {
+            "CSAT": 95,
+            "SLA dos DS": 82,
+            "Cobertura de Carteira": 100,
+            "Cancelamento - Churn": 1
+        }
+
         # Encontrar as linhas de cada métrica
         metric_rows = {}
         for metrica in ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]:
@@ -193,29 +201,51 @@ def get_weekly_data():
             except:
                 metric_rows[metrica] = None
 
-        # Extrair dados de cada métrica
+        # Extrair dados de cada métrica e calcular percentual de atingimento
         for metrica, data_row in metric_rows.items():
             if data_row is None:
                 continue
                 
-            valores = []
+            percentuais = []
+            meta_val = metas_fixas.get(metrica, 1)  # Meta da métrica
             
-            # Colunas para cada semana (B, E, H, K para CSAT; C, F, I, L para outras)
-            if metrica == "CSAT":
-                colunas = [1, 4, 7, 10]  # B, E, H, K
-            else:
-                colunas = [2, 5, 8, 11]  # C, F, I, L
+            # Colunas para cada semana (B,C), (E,F), (H,I), (K,L) - (Total, Cumprido)
+            colunas_semanas = [
+                (1, 2),   # B, C - Semana 01 a 05 (Total, Cumprido)
+                (4, 5),   # E, F - Semana 08 a 12 (Total, Cumprido)
+                (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
+                (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
+            ]
             
-            for coluna in colunas:
+            for col_total, col_cumprido in colunas_semanas:
                 try:
-                    valor = _to_number(df.iloc[data_row, coluna])
-                    valores.append(valor)
+                    total = _to_number(df.iloc[data_row, col_total])
+                    cumprido = _to_number(df.iloc[data_row, col_cumprido])
+                    
+                    # Calcular percentual de atingimento da meta
+                    if total > 0:
+                        if "Churn" in metrica:
+                            # Para Churn: percentual = (1 - (cumprido/total)) * 100 / meta
+                            # Quanto menor o churn, melhor
+                            percentual_atingimento = ((1 - (cumprido/total)) * 100) / meta_val
+                        else:
+                            # Para outras métricas: percentual = (cumprido/total) * 100 / meta
+                            percentual_atingimento = ((cumprido/total) * 100) / meta_val
+                        
+                        # Garantir que não ultrapasse 100% para métricas normais
+                        if "Churn" not in metrica and percentual_atingimento > 100:
+                            percentual_atingimento = 100
+                    else:
+                        percentual_atingimento = 0
+                        
+                    percentuais.append(percentual_atingimento)
+                        
                 except Exception as e:
-                    print(f"Erro em {metrica}, coluna {coluna}: {e}")
-                    valores.append(0)
+                    print(f"Erro em {metrica}, colunas {col_total},{col_cumprido}: {e}")
+                    percentuais.append(0)
             
             metric_key = metrica.lower().replace(" ", "_").replace("-", "_")
-            weekly_data[metric_key] = valores
+            weekly_data[metric_key] = percentuais
 
         return jsonify({"success": True, "data": weekly_data})
 
