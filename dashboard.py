@@ -164,6 +164,7 @@ def get_metrics():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+
 @dashboard_bp.route("/weekly-data", methods=["GET"])
 def get_weekly_data():
     try:
@@ -172,7 +173,6 @@ def get_weekly_data():
             return jsonify({"success": False, "error": "Erro ao carregar Excel"})
 
         df = pd.read_excel(xls, sheet_name="Métricas")
-        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
         # PERÍODOS DAS SEMANAS FIXOS
         periodos_semanas = [
@@ -184,42 +184,36 @@ def get_weekly_data():
 
         weekly_data = {"semanas": periodos_semanas}
 
-        # Para cada métrica, calcular os percentuais semanais
-        for metrica in metricas:
-            row_index = df[df.iloc[:, 0] == metrica].index[0]
+        # Encontrar as linhas de cada métrica
+        metric_rows = {}
+        for metrica in ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]:
+            try:
+                row_index = df[df.iloc[:, 0] == metrica].index[0]
+                metric_rows[metrica] = row_index + 1  # Linha dos dados
+            except:
+                metric_rows[metrica] = None
+
+        # Extrair dados de cada métrica
+        for metrica, data_row in metric_rows.items():
+            if data_row is None:
+                continue
+                
             valores = []
             
-            # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
-            colunas_semanas = [
-                (1, 2),   # B, C - Semana 01 a 05 (Total, Cumprido)
-                (4, 5),   # E, F - Semana 08 a 12 (Total, Cumprido)
-                (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
-                (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
-            ]
+            # Colunas para cada semana (B, E, H, K para CSAT; C, F, I, L para outras)
+            if metrica == "CSAT":
+                colunas = [1, 4, 7, 10]  # B, E, H, K
+            else:
+                colunas = [2, 5, 8, 11]  # C, F, I, L
             
-            for col_total, col_cumprido in colunas_semanas:
+            for coluna in colunas:
                 try:
-                    total = _to_number(df.iloc[row_index + 1, col_total])
-                    cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
-                    
-                    # Calcular percentual apenas se houver dados válidos
-                    if total > 0:
-                        percentual = (cumprido / total) * 100  # Converter para porcentagem
-                    else:
-                        percentual = 0
-                        
-                    valores.append(percentual)
-                        
+                    valor = _to_number(df.iloc[data_row, coluna])
+                    valores.append(valor)
                 except Exception as e:
-                    print(f"Erro ao processar {metrica} na coluna {col_total}: {e}")
-                    valores.append(0)  # Adiciona 0 em caso de erro
-                    continue
+                    print(f"Erro em {metrica}, coluna {coluna}: {e}")
+                    valores.append(0)
             
-            # Garantir que sempre tenha 4 valores (uma para cada semana)
-            while len(valores) < 4:
-                valores.append(0)
-                
-            # Adicionar ao weekly_data com o nome correto da métrica
             metric_key = metrica.lower().replace(" ", "_").replace("-", "_")
             weekly_data[metric_key] = valores
 
@@ -297,4 +291,3 @@ def get_summary():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
