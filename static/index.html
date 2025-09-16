@@ -52,7 +52,7 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 800;
-            text-shadow: 0 0 30px rgba(0, 217, 255, 0.3);
+            text-shadow: 0 极速飞艇
             display: flex;
             align-items: center;
             justify-content: center;
@@ -74,7 +74,7 @@
             display: flex;
             justify-content: center;
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 30极速飞艇
             flex-wrap: wrap;
         }
 
@@ -94,11 +94,11 @@
             background: rgba(0, 217, 255, 0.2);
             border-color: #00D9FF;
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 217, 255, 0.2);
+            box-shadow: 0 10px 20px rgba极速飞艇
         }
 
         .filter-btn.active {
-            background: linear-gradient(135deg, #00D9FF, #FF6B35);
+            background: linear-gradient(135deg, #00极速飞艇
             border-color: #00D9FF;
             box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
         }
@@ -128,7 +128,7 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 3px;
+            height: 3极速飞艇
             background: linear-gradient(90deg, #00D9FF, #FF6B35, #8B5CF6);
         }
 
@@ -145,6 +145,7 @@
             font-weight: 500;
         }
 
+       极速飞艇
         .summary-card .value {
             font-size: 3rem;
             font-weight: 800;
@@ -205,6 +206,7 @@
         .metric-title {
             font-size: 1.3rem;
             font-weight: 700;
+           极速飞艇
             color: #ffffff;
         }
 
@@ -219,13 +221,13 @@
         }
 
         .status-excelente {
-            background: linear-gradient(135deg, #00D9FF, #00B4D8);
+            background: linear-gradient(135deg, #00D9FF, #00B4极速飞艇
             box-shadow: 0 5px 15px rgba(0, 217, 255, 0.3);
         }
 
         .status-atencao {
             background: linear-gradient(135deg, #FF6B35, #F77F00);
-            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+            box-shadow: 0 5极速飞艇
         }
 
         .status-critico {
@@ -235,7 +237,7 @@
 
         .metric-values {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-column极速飞艇
             gap: 15px;
             margin-bottom: 20px;
         }
@@ -246,6 +248,12 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .value-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
         }
 
         .value-item .number {
@@ -280,6 +288,7 @@
         .progress-fill {
             height: 100%;
             border-radius: 5px;
+            transition: width 1s ease;
         }
 
         .progress-text {
@@ -311,7 +320,7 @@
 
         .legend-color {
             width: 12px;
-            height: 12px;
+            height: 12极速飞艇
             border-radius: 50%;
         }
 
@@ -324,6 +333,7 @@
             margin-bottom: 30px;
         }
 
+        .weekly极速飞艇
         .weekly-trends h3 {
             color: #ffffff;
             margin-bottom: 20px;
@@ -377,16 +387,9 @@
         .no-data-message {
             text-align: center;
             padding: 40px;
-            color: #a0a0a0;
+            color: #a0极速飞艇
             font-size: 1.1rem;
             grid-column: 1 / -1;
-        }
-
-        .week-period {
-            font-size: 0.9rem;
-            color: #00D9FF;
-            margin-bottom: 5px;
-            font-weight: 600;
         }
 
         @media (max-width: 768px) {
@@ -429,6 +432,7 @@
 
         <div class="controls">
             <button class="filter-btn active" onclick="showView('overview')">Visão Geral</button>
+            <button class极速飞艇
             <button class="filter-btn" onclick="showView('weekly')">Análise Semanal</button>
             <button class="filter-btn" onclick="showView('trends')">Tendências</button>
         </div>
@@ -441,7 +445,7 @@
             Erro ao carregar os dados. Tente novamente.
         </div>
 
-        <div id="dashboard-content" style="display: none;">
+        <div id="dashboard-content" style极速飞艇
             <div class="summary-cards">
                 <div class="summary-card">
                     <h3>Total de Métricas</h3>
@@ -457,10 +461,12 @@
                     <h3>Metas não Atingidas</h3>
                     <div class="value" id="metrics-below-target">-</div>
                     <div class="label">Abaixo do objetivo</div>
-                </div>
+                </极速飞艇
                 <div class="summary-card">
                     <h3>Performance Geral</h3>
+                    <div class极速飞艇
                     <div class="value" id="performance-percentage">-</div>
+                    <极速飞艇
                     <div class="label">% de sucesso</div>
                 </div>
             </div>
@@ -500,10 +506,13 @@
         // Função para buscar dados do dashboard
         async function fetchDashboardData() {
             try {
+                console.log('Iniciando busca de dados...');
                 const [metricsResponse, weeklyResponse] = await Promise.all([
                     fetch('/api/dashboard/metrics'),
                     fetch('/api/dashboard/weekly-data')
                 ]);
+
+                console.log('Respostas recebidas:', metricsResponse.status, weeklyResponse.status);
 
                 if (!metricsResponse.ok || !weeklyResponse.ok) {
                     throw new Error('Erro ao buscar dados');
@@ -512,12 +521,14 @@
                 const metricsData = await metricsResponse.json();
                 const weeklyData = await weeklyResponse.json();
 
+                console.log('Dados recebidos:', metricsData.success, weeklyData.success);
+
                 if (!metricsData.success || !weeklyData.success) {
                     throw new Error('Erro nos dados recebidos');
                 }
 
                 // Calcular o summary localmente a partir dos dados das métricas
-                const summaryData = calculateSummary(metricsData.data);
+                const summaryData = calculateSummary(metrics极速飞艇
 
                 return {
                     metrics: metricsData.data,
@@ -555,6 +566,7 @@
             const performancePercentage = (metricsAboveTarget / totalMetrics) * 100;
             
             return {
+                total_极速飞艇
                 total_metrics: totalMetrics,
                 metrics_above_target: metricsAboveTarget,
                 metrics_below_target: metricsBelowTarget,
@@ -588,6 +600,7 @@
                             <div class="label">Total</div>
                         </div>
                         <div class="value-item">
+                            <div class极速飞艇
                             <div class="number">${metric.total_mes.cumprido}</div>
                             <div class="label">${metric.metrica.includes('Churn') ? 'Ocorrências' : 'Cumprido'}</div>
                         </div>
@@ -608,7 +621,7 @@
                     
                     <div class="chart-legend">
                         <div class="legend-item">
-                            <div class="legend-color" style="background: ${metric.cor}"></div>
+                            <div class="legend-color" style="background: ${极速飞艇
                             <span>Cumprido</span>
                         </div>
                         <div class="legend-item">
@@ -622,8 +635,9 @@
 
         // Função para criar gráfico de pizza para cada métrica
         function createChart(metric) {
-            const canvasId = `chart-${metric.metrica.replace(/\s+/g, '-').toLowerCase().replace('---', '-')}`;
+            const canvasId = `chart-${metric.metrica.replace(/\s+/极速飞艇
             const ctx = document.getElementById(canvasId).getContext('2d');
+            const remaining = metric.total_m极速飞艇
             const remaining = metric.total_mes.total - metric.total_mes.cumprido;
             
             new Chart(ctx, {
@@ -683,6 +697,7 @@
                     </div>
                     
                     <div class="progress-container">
+                        <极速飞艇
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: ${semana.percentual * 100}%; background: ${metric.cor};"></div>
                         </div>
@@ -694,46 +709,72 @@
             `;
         }
 
-        // Função para criar gráfico de tendências
+        // Função para criar gráfico de tendências - CORRIGIDA
         function createTrendsChart(weeklyData) {
             const ctx = document.getElementById('trends-chart').getContext('2d');
+            
+            // Verificar se todos os dados estão presentes
+            console.log('Dados para gráfico:', weeklyData);
+            
+            // Garantir que todos os arrays tenham o mesmo tamanho
+            const semanas = weeklyData.semanas || [];
+            const csat = weeklyData.csat || Array(semanas.length).fill(0);
+            const sla = weeklyData.sla || Array(semanas.length).fill(0);
+            const cobertura = weeklyData.cobertura || Array(semanas.length).fill(0);
+            const churn = weeklyData.churn || Array(semanas.length).fill(0);
             
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: weeklyData.semanas,
+                    labels: semanas,
                     datasets: [
                         {
                             label: 'CSAT (%)',
-                            data: weeklyData.csat,
+                            data: csat,
                             borderColor: '#00D9FF',
                             backgroundColor: 'rgba(0, 217, 255, 0.1)',
                             tension: 0.4,
-                            fill: true
+                            fill: true,
+                            pointBackgroundColor: '#00D9FF',
+                            pointBorderColor: '#ffffff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         },
                         {
                             label: 'SLA dos DS (%)',
-                            data: weeklyData.sla,
+                            data: sla,
                             borderColor: '#FF6B35',
                             backgroundColor: 'rgba(255, 107, 53, 0.1)',
                             tension: 0.4,
-                            fill: true
+                            fill: true,
+                            pointBackgroundColor: '#FF6B35',
+                            pointBorderColor: '#ffffff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         },
                         {
                             label: 'Cobertura de Carteira (%)',
-                            data: weeklyData.cobertura,
+                            data: cobertura,
                             borderColor: '#8B5CF6',
                             backgroundColor: 'rgba(139, 92, 246, 0.1)',
                             tension: 0.4,
-                            fill: true
+                            fill: true,
+                            pointBackgroundColor: '#8B5CF6',
+                            pointBorderColor: '#ffffff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         },
                         {
                             label: 'Cancelamento - Churn (%)',
-                            data: weeklyData.churn,
+                            data: churn,
                             borderColor: '#FBE842',
                             backgroundColor: 'rgba(251, 232, 66, 0.1)',
                             tension: 0.4,
-                            fill: true
+                            fill: true,
+                            pointBackgroundColor: '#FBE842',
+                            pointBorderColor: '#ffffff',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         }
                     ]
                 },
@@ -742,15 +783,36 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
+                            position: 'top',
                             labels: {
-                                color: '#ffffff'
+                                color: '#ffffff',
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                padding: 20,
+                                usePointStyle: true
                             }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: 'rgba(255, 255, 255, 0.2)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            mode: 'index',
+                            intersect: false
                         }
                     },
                     scales: {
                         x: {
                             ticks: {
-                                color: '#ffffff'
+                                color: '#ffffff',
+                                font: {
+                                    size: 11
+                                }
                             },
                             grid: {
                                 color: 'rgba(255, 255, 255, 0.1)'
@@ -758,11 +820,29 @@
                         },
                         y: {
                             ticks: {
-                                color: '#ffffff'
+                                color: '#ffffff',
+                                font: {
+                                    size: 11
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
                             },
                             grid: {
                                 color: 'rgba(255, 255, 255, 0.1)'
-                            }
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    animations: {
+                        tension: {
+                            duration: 1000,
+                            easing: 'linear'
                         }
                     }
                 }
@@ -808,7 +888,7 @@
         }
 
         // Função para criar botões de filtro de métricas semanais
-        function createWeeklyMetricFilterButtons(metricsData) {
+        function createWeeklyMetricFilterButtons(metrics极速飞艇
             const container = document.getElementById('weekly-metric-filter-buttons');
             let buttonsHtml = '';
 
@@ -855,7 +935,7 @@
             }
         }
 
-                // Função principal para carregar o dashboard
+        // Função principal para carregar o dashboard
         async function loadDashboard() {
             try {
                 const data = await fetchDashboardData();
@@ -888,4 +968,3 @@
     </script>
 </body>
 </html>
-
