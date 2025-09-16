@@ -164,7 +164,6 @@ def get_metrics():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-
 @dashboard_bp.route("/weekly-data", methods=["GET"])
 def get_weekly_data():
     try:
@@ -183,29 +182,29 @@ def get_weekly_data():
             "22 a 30"
         ]
 
-        weekly_data = {"semanas": periodos_semanas}  # Usar períodos fixos
+        weekly_data = {"semanas": periodos_semanas}
 
-        # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
-        colunas_semanas = [
-            (1, 2),   # B, C - Semana 01 a 05
-            (4, 5),   # E, F - Semana 08 a 12
-            (7, 8),   # H, I - Semana 15 a 19
-            (10, 11)  # K, L - Semana 22 a 30
-        ]
-
+        # Para cada métrica, calcular os percentuais semanais
         for metrica in metricas:
             row_index = df[df.iloc[:, 0] == metrica].index[0]
-            
-            # Coletar dados das semanas
             valores = []
+            
+            # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
+            colunas_semanas = [
+                (1, 2),   # B, C - Semana 01 a 05 (Total, Cumprido)
+                (4, 5),   # E, F - Semana 08 a 12 (Total, Cumprido)
+                (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
+                (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
+            ]
             
             for col_total, col_cumprido in colunas_semanas:
                 try:
                     total = _to_number(df.iloc[row_index + 1, col_total])
                     cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
                     
+                    # Calcular percentual apenas se houver dados válidos
                     if total > 0:
-                        percentual = (cumprido / total) * 100
+                        percentual = (cumprido / total) * 100  # Converter para porcentagem
                     else:
                         percentual = 0
                         
@@ -213,14 +212,16 @@ def get_weekly_data():
                         
                 except Exception as e:
                     print(f"Erro ao processar {metrica} na coluna {col_total}: {e}")
-                    valores.append(0)  # Adiciona 0 em caso de erro para não quebrar o gráfico
+                    valores.append(0)  # Adiciona 0 em caso de erro
                     continue
             
             # Garantir que sempre tenha 4 valores (uma para cada semana)
             while len(valores) < 4:
                 valores.append(0)
                 
-            weekly_data[metrica.lower().replace(" ", "_")] = valores
+            # Adicionar ao weekly_data com o nome correto da métrica
+            metric_key = metrica.lower().replace(" ", "_").replace("-", "_")
+            weekly_data[metric_key] = valores
 
         return jsonify({"success": True, "data": weekly_data})
 
@@ -296,3 +297,4 @@ def get_summary():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
