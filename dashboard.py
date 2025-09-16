@@ -211,9 +211,15 @@ def get_weekly_data():
                         
                     valores.append(percentual)
                         
-                except Exception:
+                except Exception as e:
+                    print(f"Erro ao processar {metrica} na coluna {col_total}: {e}")
+                    valores.append(0)  # Adiciona 0 em caso de erro para não quebrar o gráfico
                     continue
             
+            # Garantir que sempre tenha 4 valores (uma para cada semana)
+            while len(valores) < 4:
+                valores.append(0)
+                
             weekly_data[metrica.lower().replace(" ", "_")] = valores
 
         return jsonify({"success": True, "data": weekly_data})
