@@ -82,7 +82,7 @@ def get_metrics():
         # PERÍODOS DAS SEMANAS FIXOS (conforme informado)
         periodos_semanas = [
             "01 a 05",
-            "08 a 12",
+            "08 a 12", 
             "15 a 19",
             "22 a 30"
         ]
@@ -98,7 +98,7 @@ def get_metrics():
             # Ler dados do mês das colunas O, P (índices 14, 15)
             total_mes_total = _to_number(df.iloc[row_index + 1, 14])  # Coluna O
             total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])  # Coluna P
-
+            
             # Calcular percentual manualmente
             if total_mes_total > 0:
                 total_mes_percentual = total_mes_cumprido / total_mes_total
@@ -114,21 +114,21 @@ def get_metrics():
                 (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
                 (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
             ]
-
+            
             for i, (col_total, col_cumprido) in enumerate(colunas_semanas):
                 try:
                     periodo = periodos_semanas[i]  # Usar período fixo
-
+                    
                     total = _to_number(df.iloc[row_index + 1, col_total])
                     cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
-
+                    
                     # Só criar card se tiver dados válidos
                     if total > 0 or cumprido >= 0:
                         percentual = cumprido / total if total > 0 else 0
-
+                        
                         # Determinar status para a semana (passando o nome da métrica)
                         status_semana = _get_status(percentual, meta_percentual, metrica)
-
+                        
                         semanas.append({
                             "periodo": periodo,
                             "total": total,
@@ -136,7 +136,7 @@ def get_metrics():
                             "percentual": percentual,
                             "status": status_semana  # Adicionar status para cada semana
                         })
-
+                        
                 except Exception as e:
                     print(f"Erro ao processar semana {periodos_semanas[i]}: {e}")
                     continue
@@ -173,7 +173,6 @@ def get_weekly_data():
             return jsonify({"success": False, "error": "Erro ao carregar Excel"})
 
         df = pd.read_excel(xls, sheet_name="Métricas")
-        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
         # PERÍODOS DAS SEMANAS FIXOS
         periodos_semanas = [
@@ -183,45 +182,43 @@ def get_weekly_data():
             "22 a 30"
         ]
 
-        weekly_data = {"semanas": periodos_semanas}  # Usar períodos fixos
+        weekly_data = {"semanas": periodos_semanas}
 
-        # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
-        colunas_semanas = [
-            (1, 2),   # B, C - Semana 01 a 05
-            (4, 5),   # E, F - Semana 08 a 12
-            (7, 8),   # H, I - Semana 15 a 19
-            (10, 11)  # K, L - Semana 22 a 30
-        ]
+        # Mapeamento das linhas e colunas CORRETAS para cada métrica
+        # Colunas dos PERCENTUAIS: D(3), G(6), J(9), M(12)
+        metric_config = {
+            "CSAT": {"linha": 3, "colunas": [3, 6, 9, 12]},           # Linha 3, colunas D, G, J, M
+            "SLA dos DS": {"linha": 7, "colunas": [3, 6, 9, 12]},      # Linha 7, colunas D, G, J, M  
+            "Cobertura de Carteira": {"linha": 11, "colunas": [3, 6, 9, 12]},  # Linha 11, colunas D, G, J, M
+            "Cancelamento - Churn": {"linha": 15, "colunas": [3, 6, 9, 12]}    # Linha 15, colunas D, G, J, M
+        }
 
-        for metrica in metricas:
-            row_index = df[df.iloc[:, 0] == metrica].index[0]
-
-            # Coletar dados das semanas
-            valores = []
-
-            for col_total, col_cumprido in colunas_semanas:
+        for metrica, config in metric_config.items():
+            percentuais = []
+            linha = config["linha"]
+            
+            for coluna in config["colunas"]:
                 try:
-                    total = _to_number(df.iloc[row_index + 1, col_total])
-                    cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
-
-                    if total > 0:
-                        # CORREÇÃO AQUI: retornar fração 0..1 (sem *100)
-                        percentual = cumprido / total
+                    # Extrair o valor percentual diretamente da célula
+                    valor = _to_number(df.iloc[linha, coluna])
+                    
+                    # Para Churn, a lógica é invertida (valores menores são melhores)
+                    if "Churn" in metrica:
+                        # Converter para percentual de atingimento (ex: 0.0057 → 99.43)
+                        percentual = (1 - valor) * 100
                     else:
-                        percentual = 0
-
-                    valores.append(percentual)
-
+                        # Para outras métricas, usar o valor diretamente (já está em decimal)
+                        percentual = valor * 100
+                    
+                    percentuais.append(percentual)
+                        
                 except Exception as e:
-                    print(f"Erro ao processar {metrica} na coluna {col_total}: {e}")
-                    valores.append(0)  # Adiciona 0 em caso de erro para não quebrar o gráfico
-                    continue
-
-            # Garantir que sempre tenha 4 valores (uma para cada semana)
-            while len(valores) < 4:
-                valores.append(0)
-
-            weekly_data[metrica.lower().replace(" ", "_")] = valores
+                    print(f"Erro em {metrica}, coluna {coluna}: {e}")
+                    percentuais.append(0)
+            
+            # Adicionar ao weekly_data com o nome correto da métrica
+            metric_key = metrica.lower().replace(" ", "_").replace("-", "_")
+            weekly_data[metric_key] = percentuais
 
         return jsonify({"success": True, "data": weekly_data})
 
@@ -254,20 +251,20 @@ def get_summary():
         for metrica in metricas:
             try:
                 row_index = df[df.iloc[:, 0] == metrica].index[0]
-
+                
                 # USAR META FIXA DO MÊS
                 meta_val = metas_fixas.get(metrica, 0)
                 meta_percentual = meta_val / 100
-
+                
                 # Ler dados do mês das colunas O, P
                 total_mes_total = _to_number(df.iloc[row_index + 1, 14])
                 total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])
-
+                
                 if total_mes_total > 0:
                     percentual = total_mes_cumprido / total_mes_total
                 else:
                     percentual = 0
-
+                
                 # Verificar se atingiu a meta (lógica invertida para Churn)
                 if "Churn" in metrica:
                     if percentual <= meta_percentual:
@@ -279,7 +276,7 @@ def get_summary():
                         metrics_above_target += 1
                     else:
                         metrics_below_target += 1
-
+                        
             except Exception:
                 continue
 
