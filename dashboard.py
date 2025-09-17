@@ -82,7 +82,7 @@ def get_metrics():
         # PERÍODOS DAS SEMANAS FIXOS (conforme informado)
         periodos_semanas = [
             "01 a 05",
-            "08 a 12", 
+            "08 a 12",
             "15 a 19",
             "22 a 30"
         ]
@@ -98,7 +98,7 @@ def get_metrics():
             # Ler dados do mês das colunas O, P (índices 14, 15)
             total_mes_total = _to_number(df.iloc[row_index + 1, 14])  # Coluna O
             total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])  # Coluna P
-            
+
             # Calcular percentual manualmente
             if total_mes_total > 0:
                 total_mes_percentual = total_mes_cumprido / total_mes_total
@@ -114,21 +114,21 @@ def get_metrics():
                 (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
                 (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
             ]
-            
+
             for i, (col_total, col_cumprido) in enumerate(colunas_semanas):
                 try:
                     periodo = periodos_semanas[i]  # Usar período fixo
-                    
+
                     total = _to_number(df.iloc[row_index + 1, col_total])
                     cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
-                    
+
                     # Só criar card se tiver dados válidos
                     if total > 0 or cumprido >= 0:
                         percentual = cumprido / total if total > 0 else 0
-                        
+
                         # Determinar status para a semana (passando o nome da métrica)
                         status_semana = _get_status(percentual, meta_percentual, metrica)
-                        
+
                         semanas.append({
                             "periodo": periodo,
                             "total": total,
@@ -136,7 +136,7 @@ def get_metrics():
                             "percentual": percentual,
                             "status": status_semana  # Adicionar status para cada semana
                         })
-                        
+
                 except Exception as e:
                     print(f"Erro ao processar semana {periodos_semanas[i]}: {e}")
                     continue
@@ -173,8 +173,9 @@ def get_weekly_data():
             return jsonify({"success": False, "error": "Erro ao carregar Excel"})
 
         df = pd.read_excel(xls, sheet_name="Métricas")
+        metricas = ["CSAT", "SLA dos DS", "Cobertura de Carteira", "Cancelamento - Churn"]
 
-        # PERÍODOS DAS SEMANAS FIXOS (conforme planilha)
+        # PERÍODOS DAS SEMANAS FIXOS
         periodos_semanas = [
             "01 a 05",
             "08 a 12", 
@@ -182,112 +183,48 @@ def get_weekly_data():
             "22 a 30"
         ]
 
-        weekly_data = {"semanas": periodos_semanas}
+        weekly_data = {"semanas": periodos_semanas}  # Usar períodos fixos
 
-        # Extrair dados MANUALMENTE com tratamento de erro robusto
-        # CSAT - Linha 3, colunas D(3), G(6), J(9), M(12)
-        try:
-            weekly_data["csat"] = [
-                _to_number(df.iloc[3, 3]) * 100 if pd.notna(df.iloc[3, 3]) else 0,
-                _to_number(df.iloc[3, 6]) * 100 if pd.notna(df.iloc[3, 6]) else 0,
-                _to_number(df.iloc[3, 9]) * 100 if pd.notna(df.iloc[3, 9]) else 0,
-                _to_number(df.iloc[3, 12]) * 100 if pd.notna(df.iloc[3, 12]) else 0
-            ]
-        except Exception as e:
-            print(f"Erro CSAT: {e}")
-            weekly_data["csat"] = [0, 0, 0, 0]
+        # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
+        colunas_semanas = [
+            (1, 2),   # B, C - Semana 01 a 05
+            (4, 5),   # E, F - Semana 08 a 12
+            (7, 8),   # H, I - Semana 15 a 19
+            (10, 11)  # K, L - Semana 22 a 30
+        ]
 
-        # SLA dos DS - Linha 7, colunas D(3), G(6), J(9), M(12)
-        try:
-            weekly_data["sla"] = [
-                _to_number(df.iloc[7, 3]) * 100 if pd.notna(df.iloc[7, 3]) else 0,
-                _to_number(df.iloc[7, 6]) * 100 if pd.notna(df.iloc[7, 6]) else 0,
-                _to_number(df.iloc[7, 9]) * 100 if pd.notna(df.iloc[7, 9]) else 0,
-                _to_number(df.iloc[7, 12]) * 100 if pd.notna(df.iloc[7, 12]) else 0
-            ]
-        except Exception as e:
-            print(f"Erro SLA: {e}")
-            weekly_data["sla"] = [0, 0, 0, 0]
+        for metrica in metricas:
+            row_index = df[df.iloc[:, 0] == metrica].index[0]
 
-        # Cobertura de Carteira - Linha 11, colunas D(3), G(6), J(9), M(12)
-        try:
-            weekly_data["cobertura"] = [
-                _to_number(df.iloc[11, 3]) * 100 if pd.notna(df.iloc[11, 3]) else 0,
-                _to_number(df.iloc[11, 6]) * 100 if pd.notna(df.iloc[11, 6]) else 0,
-                _to_number(df.iloc[11, 9]) * 100 if pd.notna(df.iloc[11, 9]) else 0,
-                _to_number(df.iloc[11, 12]) * 100 if pd.notna(df.iloc[11, 12]) else 0
-            ]
-        except Exception as e:
-            print(f"Erro Cobertura: {e}")
-            weekly_data["cobertura"] = [0, 0, 0, 0]
+            # Coletar dados das semanas
+            valores = []
 
-        # Cancelamento - Churn - Linha 15, colunas D(3), G(6), J(9), M(12)
-        # Lógica invertida para Churn (valores menores são melhores)
-        try:
-            weekly_data["churn"] = [
-                (1 - _to_number(df.iloc[15, 3])) * 100 if pd.notna(df.iloc[15, 3]) else 0,
-                (1 - _to_number(df.iloc[15, 6])) * 100 if pd.notna(df.iloc[15, 6]) else 0,
-                (1 - _to_number(df.iloc[15, 9])) * 100 if pd.notna(df.iloc[15, 9]) else 0,
-                (1 - _to_number(df.iloc[15, 12])) * 100 if pd.notna(df.iloc[15, 12]) else 0
-            ]
-        except Exception as e:
-            print(f"Erro Churn: {e}")
-            weekly_data["churn"] = [0, 0, 0, 0]
+            for col_total, col_cumprido in colunas_semanas:
+                try:
+                    total = _to_number(df.iloc[row_index + 1, col_total])
+                    cumprido = _to_number(df.iloc[row_index + 1, col_cumprido])
 
-        # RNR - Se não tiver dados no Excel, usar valores de exemplo
-        weekly_data["rnr"] = [10, 20, 50, 20]  # Valores de exemplo
+                    if total > 0:
+                        # CORREÇÃO AQUI: retornar fração 0..1 (sem *100)
+                        percentual = cumprido / total
+                    else:
+                        percentual = 0
 
-        print("Dados extraídos para gráfico:")
-        print(f"CSAT: {weekly_data['csat']}")
-        print(f"SLA: {weekly_data['sla']}")
-        print(f"Cobertura: {weekly_data['cobertura']}")
-        print(f"Churn: {weekly_data['churn']}")
+                    valores.append(percentual)
+
+                except Exception as e:
+                    print(f"Erro ao processar {metrica} na coluna {col_total}: {e}")
+                    valores.append(0)  # Adiciona 0 em caso de erro para não quebrar o gráfico
+                    continue
+
+            # Garantir que sempre tenha 4 valores (uma para cada semana)
+            while len(valores) < 4:
+                valores.append(0)
+
+            weekly_data[metrica.lower().replace(" ", "_")] = valores
 
         return jsonify({"success": True, "data": weekly_data})
 
-    except Exception as e:
-        print(f"Erro geral em weekly-data: {e}")
-        return jsonify({"success": False, "error": str(e)})
-
-
-@dashboard_bp.route("/debug-values", methods=["GET"])
-def debug_values():
-    try:
-        xls = load_excel()
-        if not xls:
-            return jsonify({"success": False, "error": "Erro ao carregar Excel"})
-
-        df = pd.read_excel(xls, sheet_name="Métricas")
-        
-        debug_info = {
-            "csat_cells": {
-                "D3": str(df.iloc[3, 3]),
-                "G3": str(df.iloc[3, 6]),
-                "J3": str(df.iloc[3, 9]),
-                "M3": str(df.iloc[3, 12])
-            },
-            "sla_cells": {
-                "D7": str(df.iloc[7, 3]),
-                "G7": str(df.iloc[7, 6]),
-                "J7": str(df.iloc[7, 9]),
-                "M7": str(df.iloc[7, 12])
-            },
-            "cobertura_cells": {
-                "D11": str(df.iloc[11, 3]),
-                "G11": str(df.iloc[11, 6]),
-                "J11": str(df.iloc[11, 9]),
-                "M11": str(df.iloc[11, 12])
-            },
-            "churn_cells": {
-                "D15": str(df.iloc[15, 3]),
-                "G15": str(df.iloc[15, 6]),
-                "J15": str(df.iloc[15, 9]),
-                "M15": str(df.iloc[15, 12])
-            }
-        }
-        
-        return jsonify({"success": True, "data": debug_info})
-        
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -317,20 +254,20 @@ def get_summary():
         for metrica in metricas:
             try:
                 row_index = df[df.iloc[:, 0] == metrica].index[0]
-                
+
                 # USAR META FIXA DO MÊS
                 meta_val = metas_fixas.get(metrica, 0)
                 meta_percentual = meta_val / 100
-                
+
                 # Ler dados do mês das colunas O, P
                 total_mes_total = _to_number(df.iloc[row_index + 1, 14])
                 total_mes_cumprido = _to_number(df.iloc[row_index + 1, 15])
-                
+
                 if total_mes_total > 0:
                     percentual = total_mes_cumprido / total_mes_total
                 else:
                     percentual = 0
-                
+
                 # Verificar se atingiu a meta (lógica invertida para Churn)
                 if "Churn" in metrica:
                     if percentual <= meta_percentual:
@@ -342,7 +279,7 @@ def get_summary():
                         metrics_above_target += 1
                     else:
                         metrics_below_target += 1
-                        
+
             except Exception:
                 continue
 
