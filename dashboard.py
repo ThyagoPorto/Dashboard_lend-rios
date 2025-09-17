@@ -164,6 +164,7 @@ def get_metrics():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+
 @dashboard_bp.route("/weekly-data", methods=["GET"])
 def get_weekly_data():
     try:
@@ -183,74 +184,45 @@ def get_weekly_data():
 
         weekly_data = {"semanas": periodos_semanas}
 
-        # DEBUG: Verificar a estrutura do DataFrame
-        print("Colunas do DataFrame:", df.columns.tolist())
-        print("Primeiras linhas do DataFrame:")
-        print(df.head(20))
-
-        # Mapeamento CORRETO das células onde estão os percentuais
-        metric_cells = {
-            "CSAT": [
-                df.iloc[3, 3],   # D3 - Semana 01 a 05
-                df.iloc[3, 6],   # G3 - Semana 08 a 12  
-                df.iloc[3, 9],   # J3 - Semana 15 a 19
-                df.iloc[3, 12]   # M3 - Semana 22 a 30
-            ],
-            "SLA dos DS": [
-                df.iloc[7, 3],   # D7 - Semana 01 a 05
-                df.iloc[7, 6],   # G7 - Semana 08 a 12
-                df.iloc[7, 9],   # J7 - Semana 15 a 19
-                df.iloc[7, 12]   # M7 - Semana 22 a 30
-            ],
-            "Cobertura de Carteira": [
-                df.iloc[11, 3],  # D11 - Semana 01 a 05
-                df.iloc[11, 6],  # G11 - Semana 08 a 12
-                df.iloc[11, 9],  # J11 - Semana 15 a 19
-                df.iloc[11, 12]  # M11 - Semana 22 a 30
-            ],
-            "Cancelamento - Churn": [
-                df.iloc[15, 3],  # D15 - Semana 01 a 05
-                df.iloc[15, 6],  # G15 - Semana 08 a 12
-                df.iloc[15, 9],  # J15 - Semana 15 a 19
-                df.iloc[15, 12]  # M15 - Semana 22 a 30
-            ]
+        # Mapeamento das linhas e colunas CORRETAS para cada métrica
+        # Colunas dos PERCENTUAIS: D(3), G(6), J(9), M(12)
+        metric_config = {
+            "CSAT": {"linha": 3, "colunas": [3, 6, 9, 12]},           # Linha 3, colunas D, G, J, M
+            "SLA dos DS": {"linha": 7, "colunas": [3, 6, 9, 12]},      # Linha 7, colunas D, G, J, M  
+            "Cobertura de Carteira": {"linha": 11, "colunas": [3, 6, 9, 12]},  # Linha 11, colunas D, G, J, M
+            "Cancelamento - Churn": {"linha": 15, "colunas": [3, 6, 9, 12]}    # Linha 15, colunas D, G, J, M
         }
 
-        for metrica, valores in metric_cells.items():
+        for metrica, config in metric_config.items():
             percentuais = []
+            linha = config["linha"]
             
-            for valor in valores:
+            for coluna in config["colunas"]:
                 try:
-                    # Converter o valor para número
-                    valor_num = _to_number(valor)
-                    print(f"{metrica} - valor extraído: {valor} -> convertido: {valor_num}")
+                    # Extrair o valor percentual diretamente da célula
+                    valor = _to_number(df.iloc[linha, coluna])
                     
-                    # Para Churn, a lógica é invertida
+                    # Para Churn, a lógica é invertida (valores menores são melhores)
                     if "Churn" in metrica:
-                        # Se for churn, valores menores são melhores
-                        # Ex: 0.0057 significa 0.57% de churn → 99.43% de atingimento
-                        percentual = (1 - valor_num) * 100
+                        # Converter para percentual de atingimento (ex: 0.0057 → 99.43)
+                        percentual = (1 - valor) * 100
                     else:
-                        # Para outras métricas, valores maiores são melhores
-                        percentual = valor_num * 100
+                        # Para outras métricas, usar o valor diretamente (já está em decimal)
+                        percentual = valor * 100
                     
                     percentuais.append(percentual)
                         
                 except Exception as e:
-                    print(f"Erro em {metrica}: {e}")
+                    print(f"Erro em {metrica}, coluna {coluna}: {e}")
                     percentuais.append(0)
             
-            print(f"{metrica} - percentuais: {percentuais}")
-            
-            # Adicionar ao weekly_data
+            # Adicionar ao weekly_data com o nome correto da métrica
             metric_key = metrica.lower().replace(" ", "_").replace("-", "_")
             weekly_data[metric_key] = percentuais
 
-        print("Dados finais:", weekly_data)
         return jsonify({"success": True, "data": weekly_data})
 
     except Exception as e:
-        print(f"Erro geral: {e}")
         return jsonify({"success": False, "error": str(e)})
 
 
@@ -322,4 +294,3 @@ def get_summary():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
