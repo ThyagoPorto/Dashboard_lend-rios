@@ -81,10 +81,10 @@ def get_metrics():
 
         # PERÍODOS DAS SEMANAS FIXOS (conforme informado)
         periodos_semanas = [
-            "01 a 05",
-            "08 a 12",
-            "15 a 19",
-            "22 a 30"
+            "01 a 10",
+            "13 a 17",
+            "20 a 24",
+            "27 a 31"
         ]
 
         for metrica in metricas:
@@ -109,10 +109,10 @@ def get_metrics():
             semanas = []
             # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
             colunas_semanas = [
-                (1, 2),   # B, C - Semana 01 a 05 (Total, Cumprido)
-                (4, 5),   # E, F - Semana 08 a 12 (Total, Cumprido)
-                (7, 8),   # H, I - Semana 15 a 19 (Total, Cumprido)
-                (10, 11)  # K, L - Semana 22 a 30 (Total, Cumprido)
+                (1, 2),   # B, C - Semana 01 a 10 (Total, Cumprido)
+                (4, 5),   # E, F - Semana 13 a 17 (Total, Cumprido)
+                (7, 8),   # H, I - Semana 20 a 24 (Total, Cumprido)
+                (10, 11)  # K, L - Semana 27 a 31 (Total, Cumprido)
             ]
             
             for i, (col_total, col_cumprido) in enumerate(colunas_semanas):
@@ -307,3 +307,4 @@ def get_summary():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
