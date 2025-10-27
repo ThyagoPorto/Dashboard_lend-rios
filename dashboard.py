@@ -177,20 +177,20 @@ def get_weekly_data():
 
         # PERÍODOS DAS SEMANAS FIXOS
         periodos_semanas = [
-            "01 a 05",
-            "08 a 12", 
-            "15 a 19",
-            "22 a 30"
+            "01 a 10",
+            "13 a 17", 
+            "20 a 24",
+            "27 a 31"
         ]
 
         weekly_data = {"semanas": periodos_semanas}  # Usar períodos fixos
 
         # Colunas para cada semana: [B,C], [E,F], [H,I], [K,L] (Total, Cumprido)
         colunas_semanas = [
-            (1, 2),   # B, C - Semana 01 a 05
-            (4, 5),   # E, F - Semana 08 a 12
-            (7, 8),   # H, I - Semana 15 a 19
-            (10, 11)  # K, L - Semana 22 a 30
+            (1, 2),   # B, C - Semana 01 a 10
+            (4, 5),   # E, F - Semana 13 a 17
+            (7, 8),   # H, I - Semana 20 a 24
+            (10, 11)  # K, L - Semana 27 a 31
         ]
 
         # MAPA DE NOMES -> chaves esperadas pelo frontend
@@ -307,4 +307,5 @@ def get_summary():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
 
